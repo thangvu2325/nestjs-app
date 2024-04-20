@@ -7,7 +7,7 @@ import { CoapService } from './coap/coap.service';
 import { HttpExceptionFilter } from './http-exception.filter';
 
 async function bootstrap() {
-  const port = process.env.NESTJS_APP_DOCKER_PORT;
+  const port = process.env.PORT;
 
   const app = await NestFactory.create(AppModule);
   app.useGlobalFilters(new HttpExceptionFilter());
