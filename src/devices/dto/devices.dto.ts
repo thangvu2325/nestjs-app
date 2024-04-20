@@ -12,6 +12,8 @@ export class DevicesDto extends BaseDto {
   @Expose()
   deviceId: string;
   @Expose()
+  secretKey: string;
+  @Expose()
   rssi: number;
   @Expose()
   sensors: SensorsDto;

@@ -17,6 +17,7 @@ import { SimDto } from './dto/sim.dto';
 import { SignalDto } from './dto/signal.dto';
 import { NetWorkDto } from './dto/network.dto';
 import { CustomersDto } from 'src/customers/customers.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class DevicesService extends MysqlBaseService<
@@ -133,6 +134,7 @@ export class DevicesService extends MysqlBaseService<
       // Save the new device and await its completion
       await this.devicesReposity.save({
         ...Dto,
+        secretKey: bcrypt.genSaltSync(10),
         deviceId: `device_${this.generateUniqueId()}`,
         battery: newBattery,
         sensors: newSensor,

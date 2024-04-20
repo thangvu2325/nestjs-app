@@ -14,6 +14,8 @@ export class DevicesEntity extends BaseEntity {
   customer: CustomersEntity;
   @Column({ unique: true })
   deviceId: string;
+  @Column({ unique: true })
+  secretKey: string;
   @Column({ default: 0 })
   rssi: number;
 
