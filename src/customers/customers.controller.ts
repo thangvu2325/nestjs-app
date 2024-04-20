@@ -23,7 +23,6 @@ export class CustomersController {
   ): Promise<{
     result: string;
   }> {
-    console.log(Dto);
     return this.customersService.saveCustomer(userId, Dto);
   }
 }

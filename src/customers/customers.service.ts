@@ -28,9 +28,9 @@ export class CustomersService extends MysqlBaseService<
   ): Promise<{ customers: Array<CustomersDto>; customersCount: number }> {
     const qb = await this.customersReposity
       .createQueryBuilder('customers')
-      .leftJoinAndSelect('customers.devices', 'devices')
-      .leftJoinAndSelect('customers.user', 'user');
-    qb.where('1 = 1');
+      .leftJoinAndSelect('customers.devices', 'devices');
+    qb.where('1= 1');
+
     qb.orderBy('customers.createdAt', 'DESC'); // Corrected the alias to 'posts'
     const customersCount = await qb.getCount();
     if ('limit' in query) {

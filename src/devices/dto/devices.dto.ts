@@ -21,4 +21,6 @@ export class DevicesDto extends BaseDto {
   signal: SignalDto;
   @Expose()
   sim: SimDto;
+  @Expose()
+  active: string;
 }

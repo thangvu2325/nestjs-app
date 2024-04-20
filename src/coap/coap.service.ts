@@ -250,7 +250,7 @@ export class CoapService {
     this.server.listen(() => {
       const req = request({
         method: 'POST', // Phương thức yêu cầu
-        hostname: 'localhost', // Tên máy chủ đích
+        hostname: '115.78.92.253', // Tên máy chủ đích
         pathname: '/test', // Đường dẫn đích
         query: 'param1=value1&param2=value2',
         confirmable: true, // Yêu cầu xác nhận

@@ -113,6 +113,7 @@ export class DevicesService extends MysqlBaseService<
               excludeExtraneousValues: true,
             },
           ),
+          active: device.customer === null ? false : true,
         },
         { excludeExtraneousValues: true },
       );
