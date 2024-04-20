@@ -29,11 +29,7 @@ import { DevicesModule } from './devices/devices.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'mysql',
-        host: configService.get('MYSQLDB_HOST'),
-        port: configService.get('MYSQLDB_LOCAL_PORT'),
-        username: configService.get('MYSQLDB_USER'),
-        password: configService.get('MYSQLDB_PASSWORD'),
-        database: configService.get('MYSQLDB_DATABASE'),
+        url: configService.get('MYSQLDB_URI'),
         entities: [
           UserEntity,
           CustomersEntity,
