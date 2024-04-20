@@ -254,6 +254,7 @@ export class CoapService {
         pathname: '/test', // Đường dẫn đích
         query: 'param1=value1&param2=value2',
         confirmable: true, // Yêu cầu xác nhận
+        port: 12345,
       });
 
       // Đăng ký các trình nghe sự kiện cho yêu cầu
