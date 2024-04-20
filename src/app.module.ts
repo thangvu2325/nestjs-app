@@ -27,22 +27,25 @@ import { DevicesModule } from './devices/devices.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        url: configService.get('MYSQLDB_URI'),
-        entities: [
-          UserEntity,
-          CustomersEntity,
-          DevicesEntity,
-          NotifiesEntity,
-          SensorsEntity,
-          BatteryEntity,
-          SimEntity,
-          SignalEntity,
-          NetworkEntity,
-        ],
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        console.log(configService.get('MYSQLDB_URI'));
+        return {
+          type: 'mysql',
+          url: configService.get('MYSQLDB_URI'),
+          entities: [
+            UserEntity,
+            CustomersEntity,
+            DevicesEntity,
+            NotifiesEntity,
+            SensorsEntity,
+            BatteryEntity,
+            SimEntity,
+            SignalEntity,
+            NetworkEntity,
+          ],
+          synchronize: true,
+        };
+      },
     }),
     CustomersModule,
     UsersModule,
