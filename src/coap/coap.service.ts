@@ -1,6 +1,7 @@
 // coap.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { isArray, isJSON } from 'class-validator';
 import { createServer, request } from 'coap';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesService } from 'src/devices/devices.service';
@@ -137,9 +138,17 @@ export class CoapService {
       } else {
         req.on('end', async () => {
           let device: DevicesDto;
+          console.log(payload);
+          if (!isJSON(payload)) {
+            console.log('Dữ liệu không hợp lệ');
+            return;
+          }
           switch (req.method) {
             case 'POST':
-              const data: DataCoapType = JSON.parse(payload);
+              const data: DataCoapType = JSON.parse(payload) as DataCoapType;
+              if (!isArray(data)) {
+                break;
+              }
               if (data?.length) {
                 data?.forEach((obj) => {
                   switch (obj.testId) {
@@ -169,7 +178,9 @@ export class CoapService {
                       break;
                     case 'CELLULAR_SIGNAL':
                       if (obj.results.result === 'TEST_SUCCESSFUL') {
-                        device.signal = { ...obj.results.details } as SignalDto;
+                        device.signal = {
+                          ...obj.results.details,
+                        } as SignalDto;
                       }
                       break;
                   }
@@ -183,7 +194,7 @@ export class CoapService {
                 .leftJoinAndSelect('signal.networkReport', 'network')
                 .leftJoinAndSelect('devices.sim', 'sim')
                 .where('devices.deviceId = :deviceId', {
-                  deviceId: device.deviceId,
+                  deviceId: device?.deviceId ?? '',
                 }) // Sửa đổi ở đây
                 .getOne(); // Sử dụng getOne() thay vì then()
               if (!deviceFound) {
@@ -247,14 +258,14 @@ export class CoapService {
   }
   sendRequest() {
     // Tạo một đối tượng yêu cầu CoAP với các tùy chọn cần thiết
-    this.server.listen(12345, () => {
+    this.server.listen(Number(process.env.COAP_PORT), () => {
       const req = request({
         method: 'POST', // Phương thức yêu cầu
         hostname: 'localhost', // Tên máy chủ đích
         pathname: '/test', // Đường dẫn đích
         query: 'param1=value1&param2=value2',
         confirmable: true, // Yêu cầu xác nhận
-        port: 12345,
+        port: Number(process.env.COAP_PORT),
       });
 
       // Đăng ký các trình nghe sự kiện cho yêu cầu
