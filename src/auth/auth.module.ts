@@ -12,10 +12,11 @@ import { MailService } from 'src/mail/mail.service';
 import { CustomersModule } from 'src/customers/customers.module';
 import { CustomersService } from 'src/customers/customers.service';
 import { CustomersEntity } from 'src/customers/customers.entity';
+import { DevicesEntity } from 'src/devices/entities/devices.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CustomersEntity]),
+    TypeOrmModule.forFeature([CustomersEntity, DevicesEntity]), // Add DevicesEntity here
     TypeOrmModule.forFeature([UserEntity]),
     UsersModule,
     CustomersModule,

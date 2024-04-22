@@ -5,9 +5,9 @@ import { MysqlBaseService } from 'src/common/mysql/base.service';
 import { plainToClass } from 'class-transformer';
 import { CustomersEntity } from './customers.entity';
 import { CustomersDto } from './customers.dto';
-import { UsersService } from 'src/users/users.service';
 import { UserEntity } from 'src/users/user.entity';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
+import { DevicesEntity } from 'src/devices/entities/devices.entity';
 
 @Injectable()
 export class CustomersService extends MysqlBaseService<
@@ -19,7 +19,8 @@ export class CustomersService extends MysqlBaseService<
     private readonly customersReposity: Repository<CustomersEntity>,
     @InjectRepository(UserEntity)
     private readonly usersReposity: Repository<UserEntity>,
-    private readonly usersService: UsersService,
+    @InjectRepository(DevicesEntity)
+    private readonly devicesReposity: Repository<DevicesEntity>,
   ) {
     super(customersReposity, CustomersDto);
   }
@@ -43,10 +44,14 @@ export class CustomersService extends MysqlBaseService<
 
     const customerList = await qb.getMany();
     const customersDtoArray = customerList.map((customer) => {
+      console.log(customer);
       return plainToClass(
         CustomersDto,
         {
-          ...customer,
+          ...{
+            ...customer,
+            fullName: customer.last_name + customer.first_name,
+          },
           devices: customer.devices.map((device) => {
             return plainToClass(
               DevicesDto,
@@ -92,6 +97,36 @@ export class CustomersService extends MysqlBaseService<
     userFounded.customer = newCustomer;
     await this.usersReposity.save(userFounded);
     // Trả về kết quả thành công
+    return { result: 'thành công' };
+  }
+  async addDevice(
+    Dto: DevicesDto,
+    customer_id: string,
+  ): Promise<{ result: string }> {
+    // Truy vấn user dựa trên userId
+    const customerFound = await this.customersReposity
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.devices', 'devices')
+      .where('customer.customer_id = :customer_id', {
+        customer_id: customer_id,
+      })
+      .getOne();
+
+    // Kiểm tra xem user có tồn tại hay không
+    if (!customerFound) {
+      return { result: 'không tìm thấy khách hàng' };
+    }
+    const deviceFound = await this.devicesReposity.findOne({
+      where: { deviceId: Dto.deviceId },
+    });
+    if (!deviceFound) {
+      return { result: 'không tìm thấy thiết bị' };
+    }
+    if (deviceFound.secretKey !== Dto.secretKey) {
+      return { result: 'Mã bí mật không đúng' };
+    }
+    customerFound.devices.push(deviceFound);
+    await this.customersReposity.save(customerFound);
     return { result: 'thành công' };
   }
 }
