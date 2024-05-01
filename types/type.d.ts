@@ -1,67 +1,46 @@
 export type DataCoapType = [
   {
-    testId: 'MAIN_MCU_BLE_SIGNAL';
-    results: {
-      result: string;
-      details: {
-        deviceId: string;
-        rssi: number;
-      };
+    testId: 'MAIN_MCU_MODULE_SIGNAL';
+    details: {
+      deviceId: string;
     };
   },
   {
-    testId: 'Sensor';
-    results: {
-      result: string;
-      details: {
-        smokeValue: number;
-      };
+    testId: 'SENSOR';
+    details: {
+      AlarmSatus: number;
+      SmokeValue: number;
+      Temperature: number;
+      Humidity: number;
     };
   },
   {
     testId: 'BATTERY_VOLTAGE';
-    results: {
-      result: string;
-      details: {
-        source: string;
-        voltage: number;
-      };
+    details: {
+      voltage: number;
     };
   },
   {
     testId: 'CELLULAR_SIM';
-    results: {
-      result: string;
-      details: {
-        imsi: string;
-      };
+    details: {
+      imsi: string;
     };
   },
   {
     testId: 'CELLULAR_SIGNAL';
-    results: {
-      result: string;
-      details: {
-        band: string;
-        deviceNetworkRssiDbm: number;
-        gsmStatus: string;
-        networkReport: {
-          absoluteRadioFrequencyChannel: string;
-          areaTacChangeCount: string;
-          cellChangeCount: string;
-          cellId: string;
-          connectionStatus: string;
-          extendedDiscontinuousReception: string;
-          ipAddress: string;
-          mcc: string;
-          mnc: string;
-          referenceSignalReceivedPower: string;
-          referenceSignalReceivedQuality: string;
-          requestedActiveTime: string;
-          requestedPeriodicTrackingAreaUpdate: string;
-          tac: string;
-        };
-      };
+    details: {
+      Operator: string;
+      band: string;
+      EARFCN: string;
+      PCI: string;
+      connectionStatus: string;
+      ipAddress: string;
+      RSRP: string;
+      RSSI: string;
+      RSRQ: string;
+      T3324: string;
+      T3412: string;
+      tac: string;
     };
   },
 ];

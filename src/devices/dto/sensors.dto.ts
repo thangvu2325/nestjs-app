@@ -3,7 +3,11 @@ import { BaseDto } from 'src/common/base.dto';
 
 export class SensorsDto extends BaseDto {
   @Expose()
-  sensorId: string;
+  AlarmSatus: number;
   @Expose()
-  smokeValue: number;
+  SmokeValue: number;
+  @Expose()
+  Temperature: number;
+  @Expose()
+  Humidity: number;
 }

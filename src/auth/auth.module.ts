@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from 'src/users/users.module';
-import { UserEntity } from 'src/users/user.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
@@ -13,6 +12,7 @@ import { CustomersModule } from 'src/customers/customers.module';
 import { CustomersService } from 'src/customers/customers.service';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
+import { UserEntity } from 'src/users/entity/user.entity';
 
 @Module({
   imports: [

@@ -1,6 +1,5 @@
-import { Entity, Column, BeforeInsert, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
-import * as bcrypt from 'bcrypt';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { IsEmail, IsPhoneNumber } from 'class-validator';
 
@@ -24,16 +23,11 @@ export class UserEntity extends BaseEntity {
   phone: string;
   @Column({
     type: 'enum',
-    enum: ['Administrator', 'Moderator', 'Khách Hàng'],
-    default: 'Khách Hàng',
+    enum: ['Administrator', 'Moderator', 'User'],
+    default: 'User',
   })
   role: string;
   @OneToOne(() => CustomersEntity)
   @JoinColumn()
   customer: CustomersEntity;
-  @BeforeInsert()
-  async hashPassword() {
-    const salt = bcrypt.genSaltSync(10);
-    this.password = bcrypt.hashSync(this.password, salt);
-  }
 }

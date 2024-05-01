@@ -39,8 +39,12 @@ export class UsersController {
     return this.usersService.update(id, user);
   }
   @Post()
-  createUser(@Body() user: UsersDto): Promise<UsersDto[]> {
-    return this.usersService.save(user);
+  async createUser(@Body() user: UsersDto): Promise<{ result: string }> {
+    return await this.usersService.createUser(user);
+  }
+  @Post(':secretKey')
+  createUserRoleModerator(@Body() user: UsersDto): Promise<UsersDto[]> {
+    return this.usersService.save({ ...user, role: 'Moderator' });
   }
   @Delete(':id')
   deleteUser(@Param() id: string): Promise<{ result: string }> {

@@ -1,6 +1,5 @@
 import { Expose } from 'class-transformer';
 import { BaseDto } from 'src/common/base.dto';
-import { CustomersDto } from 'src/customers/customers.dto';
 
 export class UsersDto extends BaseDto {
   @Expose()
@@ -17,5 +16,5 @@ export class UsersDto extends BaseDto {
   @Expose()
   role: string;
   @Expose()
-  customer: CustomersDto;
+  customer_id: string;
 }

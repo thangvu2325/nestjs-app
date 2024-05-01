@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CustomersDto } from './customers.dto';
 import { UsersService } from 'src/users/users.service';
@@ -28,6 +28,15 @@ export class CustomersController {
   }
   @Post('/device/:customer_id')
   addDevice(
+    @Body() Dto: DevicesDto,
+    @Param('customer_id') customer_id: string,
+  ): Promise<{
+    result: string;
+  }> {
+    return this.customersService.addDevice(Dto, customer_id);
+  }
+  @Delete('/device/:customer_id/:deviceId')
+  delelteDevice(
     @Body() Dto: DevicesDto,
     @Param('customer_id') customer_id: string,
   ): Promise<{

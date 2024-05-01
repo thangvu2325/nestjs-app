@@ -5,9 +5,10 @@ import { MysqlBaseService } from 'src/common/mysql/base.service';
 import { plainToClass } from 'class-transformer';
 import { CustomersEntity } from './customers.entity';
 import { CustomersDto } from './customers.dto';
-import { UserEntity } from 'src/users/user.entity';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
+
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
+import { UserEntity } from 'src/users/entity/user.entity';
 
 @Injectable()
 export class CustomersService extends MysqlBaseService<
@@ -83,7 +84,7 @@ export class CustomersService extends MysqlBaseService<
     if (!userFounded) {
       return { result: 'không tìm thấy user' };
     }
-    if (userFounded.customer.id) {
+    if (userFounded?.customer?.id) {
       return { result: 'Tài khoản này đã đăng ký khách hàng' };
     }
     // Tạo một khách hàng mới từ đối tượng CustomersEntity và gán giá trị từ Dto

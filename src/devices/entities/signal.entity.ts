@@ -1,19 +1,36 @@
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
-import { NetworkEntity } from './network.entity';
 
 @Entity({
   name: 'signal',
 })
 export class SignalEntity extends BaseEntity {
   @Column({ default: '' })
-  band: string;
-  @Column({ default: 0 })
-  deviceNetworkRssiDbm: number;
+  Operator: string;
   @Column({ default: '' })
-  gsmStatus: string;
-
-  @OneToOne(() => NetworkEntity)
-  @JoinColumn()
-  networkReport: NetworkEntity;
+  band: string;
+  @Column({ default: '' })
+  EARFCN: string;
+  @Column({ default: '' })
+  PCI: string;
+  @Column({ default: '' })
+  connectionStatus: string;
+  @Column({ default: '' })
+  ipAddress: string;
+  @Column({ default: '' })
+  mcc: string;
+  @Column({ default: '' })
+  mnc: string;
+  @Column({ default: '' })
+  RSRP: string;
+  @Column({ default: '' })
+  RSSI: string;
+  @Column({ default: '' })
+  RSRQ: string;
+  @Column({ default: '' })
+  T3324: string;
+  @Column({ default: '' })
+  T3412: string;
+  @Column({ default: '' })
+  tac: string;
 }

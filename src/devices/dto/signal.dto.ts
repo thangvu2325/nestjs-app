@@ -1,14 +1,29 @@
 import { Expose } from 'class-transformer';
 import { BaseDto } from 'src/common/base.dto';
-import { NetWorkDto } from './network.dto';
 
 export class SignalDto extends BaseDto {
   @Expose()
+  Operator: string;
+  @Expose()
   band: string;
   @Expose()
-  deviceNetworkRssiDbm: number;
+  EARFCN: string;
   @Expose()
-  gsmStatus: string;
+  PCI: string;
   @Expose()
-  networkReport: NetWorkDto;
+  connectionStatus: string;
+  @Expose()
+  ipAddress: string;
+  @Expose()
+  RSRP: string;
+  @Expose()
+  RSSI: string;
+  @Expose()
+  RSRQ: string;
+  @Expose()
+  T3324: string;
+  @Expose()
+  T3412: string;
+  @Expose()
+  tac: string;
 }

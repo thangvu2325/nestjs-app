@@ -29,6 +29,10 @@ export class AuthController {
   async registerUser(@Body() dto: UsersDto) {
     return this.authService.register(dto);
   }
+  @Post('register/:secretKey')
+  async registerUserWithRoleModerator(@Body() dto: UsersDto) {
+    return this.authService.register(dto);
+  }
   @UseGuards(JwtGuard)
   @Post('resetpassword')
   async resetPassword(
@@ -39,8 +43,8 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return await this.authService.login(dto);
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @UseGuards(RefreshJwtGuard)

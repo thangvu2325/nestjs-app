@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
-import { UserEntity } from 'src/users/user.entity';
 import { LoginDto } from './Dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'src/redis/redis.service';
@@ -11,6 +10,7 @@ import { plainToClass, plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { CustomersService } from 'src/customers/customers.service';
 import { CustomersDto } from 'src/customers/customers.dto';
+import { UserEntity } from 'src/users/entity/user.entity';
 const EXPIRE_TIME = 20 * 1000;
 
 @Injectable()
@@ -64,8 +64,8 @@ export class AuthService {
   }
   async register(dto: UsersDto) {
     try {
-      const newUser = await this.userService.save(dto);
-      return newUser;
+      const result = await this.userService.createUser(dto);
+      return result;
     } catch (error) {
       console.error('Error while registering user:', error);
       throw new Error(`Failed to register user: ${error.message}`);
@@ -99,6 +99,9 @@ export class AuthService {
         role: user.role,
       },
     };
+    const customer = plainToInstance(CustomersDto, user.customer, {
+      excludeExtraneousValues: true,
+    });
     const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: '20s',
       secret: process.env.jwtSecretKey,
@@ -114,6 +117,7 @@ export class AuthService {
       user: plainToClass(
         UsersDto,
         {
+          customer_id: customer?.customer_id ?? '',
           ...user,
         },
         { excludeExtraneousValues: true },

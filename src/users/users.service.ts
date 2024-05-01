@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersDto } from './users.dto';
-import { UserEntity } from './user.entity';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
 import { plainToClass, plainToInstance } from 'class-transformer';
-import * as bcrypt from 'bcrypt';
 import { MailService } from 'src/mail/mail.service';
 import { CustomersDto } from 'src/customers/customers.dto';
+import { UserEntity } from './entity/user.entity';
+import { CustomersService } from 'src/customers/customers.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
@@ -16,6 +17,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     @InjectRepository(UserEntity)
     private readonly userReposity: Repository<UserEntity>,
     private readonly mailService: MailService,
+    private readonly customerService: CustomersService,
   ) {
     super(userReposity, UsersDto);
   }
@@ -69,6 +71,19 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
       .getOne();
 
     return user || null;
+  }
+  async createUser(userDto: UsersDto) {
+    const user = (await this.userReposity.save({
+      ...userDto,
+      password: bcrypt.hashSync(userDto.password, bcrypt.genSaltSync(10)),
+    })) as UsersDto;
+    if (!user) {
+      throw new NotFoundException('Tạo User Thất bại');
+    }
+    return await this.customerService.saveCustomer(user?.id, {
+      email: user.email,
+      phone: user.phone,
+    } as CustomersDto);
   }
   async requestResetPassword(email: string): Promise<{ newPassword: string }> {
     const user = await this.findOneUserWithEmail(email);

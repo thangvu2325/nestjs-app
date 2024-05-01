@@ -46,4 +46,23 @@ export class MailService {
         console.log(err);
       });
   }
+  public sendRequestVerifyEmail(secret_code: string, email: string): void {
+    this.mailerService
+      .sendMail({
+        to: email, // List of receivers email address
+        subject: 'Reset Mật Khẩu ✔', // Subject line
+        from: 'workflowhub@gmail.com',
+        template: 'verifyAccount',
+        context: {
+          email,
+          secret_code,
+        },
+      })
+      .then((success) => {
+        console.log(success);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
 }
