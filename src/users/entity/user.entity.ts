@@ -2,6 +2,7 @@ import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { IsEmail, IsPhoneNumber } from 'class-validator';
+import { VerifyEntity } from './verifyKey.entity';
 
 @Entity({
   name: 'user',
@@ -13,6 +14,7 @@ export class UserEntity extends BaseEntity {
   password: string;
   @Column({ default: '' })
   avatar: string;
+
   @Column({ default: false })
   isActive: boolean;
   @Column({ default: null, unique: true })
@@ -30,4 +32,8 @@ export class UserEntity extends BaseEntity {
   @OneToOne(() => CustomersEntity)
   @JoinColumn()
   customer: CustomersEntity;
+
+  @OneToOne(() => VerifyEntity)
+  @JoinColumn()
+  verify: VerifyEntity;
 }

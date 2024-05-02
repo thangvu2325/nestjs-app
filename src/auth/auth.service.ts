@@ -71,7 +71,24 @@ export class AuthService {
       throw new Error(`Failed to register user: ${error.message}`);
     }
   }
-
+  async verifyAccount(secretKey: number, email: string) {
+    try {
+      const result = await this.userService.checkVerifyKey(secretKey, email);
+      return result;
+    } catch (error) {
+      console.error('Error while verify:', error);
+      throw new Error(`Failed to verify: ${error.message}`);
+    }
+  }
+  async resendVerifyKey(email: string) {
+    try {
+      const result = await this.userService.createVerifyKey(email);
+      return result;
+    } catch (error) {
+      console.error('Error while verify:', error);
+      throw new Error(`Failed to verify: ${error.message}`);
+    }
+  }
   async logout(userId: string): Promise<{ result: string }> {
     // Lưu Refresh Token vào Redis
     await this.redisTokenService.deleteTokenForUser(userId);

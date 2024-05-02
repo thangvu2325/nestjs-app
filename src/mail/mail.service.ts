@@ -47,7 +47,7 @@ export class MailService {
       });
   }
   public sendRequestVerifyEmail(
-    secret_code: string,
+    secret_code: number,
     email: string,
     fullName: string,
   ): void {

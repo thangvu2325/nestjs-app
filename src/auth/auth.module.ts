@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
@@ -13,10 +13,11 @@ import { CustomersService } from 'src/customers/customers.service';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CustomersEntity, DevicesEntity]), // Add DevicesEntity here
+    TypeOrmModule.forFeature([CustomersEntity, DevicesEntity, VerifyEntity]), // Add DevicesEntity here
     TypeOrmModule.forFeature([UserEntity]),
     UsersModule,
     CustomersModule,
@@ -30,6 +31,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
     JwtService,
     MailService,
     CustomersService,
+    Logger,
   ],
   exports: [AuthService],
 })

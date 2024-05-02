@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersDto } from './users.dto';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { CustomersDto } from 'src/customers/customers.dto';
 import { UserEntity } from './entity/user.entity';
 import { CustomersService } from 'src/customers/customers.service';
 import * as bcrypt from 'bcrypt';
+import { VerifyEntity } from './entity/verifyKey.entity';
 
 @Injectable()
 export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
@@ -16,8 +17,11 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     // @Inject('STORE_SERVICEuser.json') private storeService: StoreService,
     @InjectRepository(UserEntity)
     private readonly userReposity: Repository<UserEntity>,
+    @InjectRepository(VerifyEntity)
+    private readonly verifyReposity: Repository<VerifyEntity>,
     private readonly mailService: MailService,
     private readonly customerService: CustomersService,
+    private readonly logger: Logger,
   ) {
     super(userReposity, UsersDto);
   }
@@ -67,22 +71,25 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     const user = await this.userReposity
       .createQueryBuilder('user')
       .where('user.email = :email', { email })
-      .leftJoinAndSelect('user.customer', 'customer')
+      .leftJoinAndSelect('user.customer', 'customers')
       .getOne();
 
     return user || null;
   }
   async createUser(userDto: UsersDto) {
-    const user = (await this.userReposity.save({
+    const user = await this.userReposity.save({
       ...userDto,
       password: bcrypt.hashSync(userDto.password, bcrypt.genSaltSync(10)),
-    })) as UsersDto;
+    });
     if (!user) {
       throw new NotFoundException('Tạo User Thất bại');
     }
+    await this.createVerifyKey(user.id);
     return await this.customerService.saveCustomer(user?.id, {
-      email: user.email,
-      phone: user.phone,
+      email: user?.email,
+      phone: user?.phone,
+      first_name: userDto?.first_name,
+      last_name: userDto?.last_name,
     } as CustomersDto);
   }
   async requestResetPassword(email: string): Promise<{ newPassword: string }> {
@@ -138,6 +145,66 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     await this.userReposity.save(user);
 
     // Return a success message
+    return { result: 'thành công' };
+  }
+  async createVerifyKey(email: string): Promise<{ result: string }> {
+    const userFounded = await this.userReposity
+      .createQueryBuilder('users')
+      .leftJoinAndSelect('users.verify', 'verifyKey')
+      .leftJoinAndSelect('users.customer', 'customers')
+      .where('users.email = :email', { email }) // Chỉ định rõ 'users.id'
+      .getOne();
+    if (!userFounded) {
+      this.logger.error('Không tìm thấy user');
+      return { result: 'thất bại' };
+    }
+    const secretKey = Math.floor(100000 + Math.random() * 900000);
+    const verify = await this.verifyReposity.save({
+      secretKey,
+      activeKeyExpiresAt: new Date(new Date().getTime() + 5 * 60000),
+    });
+    if (!verify) {
+      this.logger.error('Tạo verify key thất bại');
+      return { result: 'thất bại' };
+    }
+    userFounded.verify = verify;
+    await this.userReposity.update(userFounded.id, userFounded);
+    await this.mailService.sendRequestVerifyEmail(
+      verify.secretKey,
+      userFounded.email,
+      userFounded.customer?.last_name + userFounded.customer?.first_name,
+    );
+    return { result: 'thành công' };
+  }
+  async checkVerifyKey(
+    key: number,
+    email: string,
+  ): Promise<{ result: string }> {
+    const userFounded = await this.userReposity
+      .createQueryBuilder('users')
+      .leftJoinAndSelect('users.verify', 'verifyKey')
+      .where('users.email = :email', { email }) // Chỉ định rõ 'users.id'
+      .getOne();
+
+    if (!userFounded) {
+      return { result: 'User không tồn tại' };
+    }
+    if (userFounded.verify.secretKey !== Number(key)) {
+      return { result: 'Mã xác nhận không đúng!' };
+    }
+    const verify = userFounded.verify;
+    if (
+      userFounded.verify.activeKeyExpiresAt.getTime() <= new Date().getTime()
+    ) {
+      userFounded.verify = null;
+      await this.userReposity.update(userFounded.id, userFounded);
+      await this.verifyReposity.delete(verify.id);
+      return { result: 'Mã xác nhận đã hết hạn.!' };
+    }
+    userFounded.verify = null;
+    userFounded.isActive = true;
+    await this.userReposity.update(userFounded.id, userFounded);
+    await this.verifyReposity.delete(verify.id);
     return { result: 'thành công' };
   }
 }

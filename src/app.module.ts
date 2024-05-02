@@ -23,6 +23,7 @@ import { SMSModule } from './sms/sms.module';
 import { HistoryEntity } from './devices/entities/history.entity';
 import { ClientSocketEntity } from './chat/clientSocket.entity';
 import { ChatModule } from './chat/chat.module';
+import { VerifyEntity } from './users/entity/verifyKey.entity';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ChatModule } from './chat/chat.module';
           SignalEntity,
           HistoryEntity,
           ClientSocketEntity,
+          VerifyEntity,
         ],
         synchronize: true,
       }),

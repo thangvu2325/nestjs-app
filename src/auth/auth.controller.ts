@@ -46,7 +46,14 @@ export class AuthController {
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
-
+  @Post('verify')
+  verifyAccount(@Body() dto: { secretKey: number; email: string }) {
+    return this.authService.verifyAccount(dto.secretKey, dto.email);
+  }
+  @Post('resend')
+  resendSecretKey(@Body() dto: { email: string }) {
+    return this.authService.resendVerifyKey(dto.email);
+  }
   @UseGuards(RefreshJwtGuard)
   @Post('refresh')
   async refreshToken(@Request() req) {

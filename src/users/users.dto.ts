@@ -2,6 +2,8 @@ import { Expose } from 'class-transformer';
 import { BaseDto } from 'src/common/base.dto';
 
 export class UsersDto extends BaseDto {
+  first_name: string;
+  last_name: string;
   @Expose()
   username: string;
   password: string;

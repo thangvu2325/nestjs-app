@@ -111,19 +111,21 @@ export class DevicesService extends MysqlBaseService<
         {
           ...device,
           ...data,
-          customer: plainToInstance(
-            CustomersDto,
-            {
-              ...device.customer,
-              fullName:
-                device.customer?.last_name ??
-                '' + device.customer?.first_name ??
-                '',
-            },
-            {
-              excludeExtraneousValues: true,
-            },
-          ),
+          customer: device.customer
+            ? plainToInstance(
+                CustomersDto,
+                {
+                  ...device.customer,
+                  fullName:
+                    device.customer?.last_name ??
+                    '' + device.customer?.first_name ??
+                    '',
+                },
+                {
+                  excludeExtraneousValues: true,
+                },
+              )
+            : null,
 
           active: device.customer === null ? false : true,
         },

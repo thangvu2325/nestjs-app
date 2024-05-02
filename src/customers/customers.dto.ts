@@ -5,7 +5,9 @@ import { UsersDto } from 'src/users/users.dto';
 
 export class CustomersDto extends BaseDto {
   @Expose()
-  fullName: string;
+  first_name: string;
+  @Expose()
+  last_name: string;
   @Expose()
   customer_id: string;
   @Expose()

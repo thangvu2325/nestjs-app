@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { LoggerService } from 'src/logger/logger.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailService } from 'src/mail/mail.service';
@@ -13,16 +13,20 @@ import { SignalEntity } from 'src/devices/entities/signal.entity';
 import { SimEntity } from 'src/devices/entities/sim.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CustomersEntity]),
-    TypeOrmModule.forFeature([UserEntity]),
-    TypeOrmModule.forFeature([DevicesEntity]),
-    TypeOrmModule.forFeature([BatteryEntity]),
-    TypeOrmModule.forFeature([SensorsEntity]),
-    TypeOrmModule.forFeature([SignalEntity]),
-    TypeOrmModule.forFeature([SimEntity]),
+    TypeOrmModule.forFeature([
+      CustomersEntity,
+      VerifyEntity,
+      UserEntity,
+      DevicesEntity,
+      BatteryEntity,
+      SensorsEntity,
+      SignalEntity,
+      SimEntity,
+    ]),
   ],
   controllers: [CustomersController],
   providers: [
@@ -31,6 +35,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
     MailService,
     UsersService,
     DevicesService,
+    Logger,
   ],
   exports: [CustomersService],
 })
