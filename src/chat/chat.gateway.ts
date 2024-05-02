@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 
-@WebSocketGateway(3006, { cors: true })
+@WebSocketGateway(Number(process.env.WEBSOCKET_PORT), { cors: true })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
