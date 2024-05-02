@@ -58,7 +58,6 @@ export class HistoryService extends MysqlBaseService<
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('signal.networkReport', 'network')
       .leftJoinAndSelect('history.sim', 'sim')
       .where('history.deviceId = :deviceId', { deviceId: DeviceFound.id });
     if ('limit' in query) {

@@ -66,7 +66,6 @@ export class DevicesService extends MysqlBaseService<
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('signal.networkReport', 'network')
       .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customer', 'customers');
     qb.where('1 = 1');
