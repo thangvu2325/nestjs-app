@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 
-@WebSocketGateway(Number(process.env.WEBSOCKET_PORT), { cors: true })
+@WebSocketGateway(55555, { cors: true })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -41,7 +41,6 @@ export class ChatGateway
     const token = client.handshake.auth.token;
     const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
-    // console.log(`id: ${client.id} \n userId: ${userId}`);
     if (!token) {
       client.disconnect();
       return;
