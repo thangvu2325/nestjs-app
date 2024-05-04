@@ -5,25 +5,25 @@ export class SignalDto extends BaseDto {
   @Expose()
   Operator: string;
   @Expose()
-  band: string;
+  band: number;
   @Expose()
-  EARFCN: string;
+  EARFCN: number;
   @Expose()
-  PCI: string;
+  PCI: number;
   @Expose()
-  connectionStatus: string;
+  connectionStatus: number;
   @Expose()
   ipAddress: string;
   @Expose()
-  RSRP: string;
+  RSRP: number;
   @Expose()
-  RSSI: string;
+  RSSI: number;
   @Expose()
-  RSRQ: string;
+  RSRQ: number;
   @Expose()
-  T3324: string;
+  T3324: number;
   @Expose()
-  T3412: string;
+  T3412: number;
   @Expose()
   tac: string;
 }

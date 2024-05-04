@@ -13,17 +13,21 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { ChatGateway } from 'src/chat/chat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from './clientSocket.entity';
+import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DevicesEntity]),
-    TypeOrmModule.forFeature([BatteryEntity]),
-    TypeOrmModule.forFeature([SensorsEntity]),
-    TypeOrmModule.forFeature([SignalEntity]),
-    TypeOrmModule.forFeature([SimEntity]),
-    TypeOrmModule.forFeature([HistoryEntity]),
-    TypeOrmModule.forFeature([CustomersEntity]),
-    TypeOrmModule.forFeature([UserEntity]),
-    TypeOrmModule.forFeature([ClientSocketEntity]),
+    TypeOrmModule.forFeature([
+      DevicesEntity,
+      BatteryEntity,
+      SensorsEntity,
+      SignalEntity,
+      SimEntity,
+      HistoryEntity,
+      CustomersEntity,
+      UserEntity,
+      ClientSocketEntity,
+      CoapClientIpAddressEntity,
+    ]),
     JwtModule,
   ],
   controllers: [],

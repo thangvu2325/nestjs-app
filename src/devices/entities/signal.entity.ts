@@ -7,30 +7,26 @@ import { BaseEntity } from 'src/common/mysql/base.entity';
 export class SignalEntity extends BaseEntity {
   @Column({ default: '' })
   Operator: string;
-  @Column({ default: '' })
-  band: string;
-  @Column({ default: '' })
-  EARFCN: string;
-  @Column({ default: '' })
-  PCI: string;
-  @Column({ default: '' })
-  connectionStatus: string;
+  @Column({ default: 0 })
+  band: number;
+  @Column({ default: 0 })
+  EARFCN: number;
+  @Column({ default: 0 })
+  PCI: number;
+  @Column({ default: 0 })
+  connectionStatus: number;
   @Column({ default: '' })
   ipAddress: string;
-  @Column({ default: '' })
-  mcc: string;
-  @Column({ default: '' })
-  mnc: string;
-  @Column({ default: '' })
-  RSRP: string;
-  @Column({ default: '' })
-  RSSI: string;
-  @Column({ default: '' })
-  RSRQ: string;
-  @Column({ default: '' })
-  T3324: string;
-  @Column({ default: '' })
-  T3412: string;
+  @Column({ default: 0 })
+  RSRP: number;
+  @Column({ default: 0 })
+  RSSI: number;
+  @Column({ default: 0 })
+  RSRQ: number;
+  @Column({ default: 0 })
+  T3324: number;
+  @Column({ default: 0 })
+  T3412: number;
   @Column({ default: '' })
   tac: string;
 }

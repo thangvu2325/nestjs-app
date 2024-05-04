@@ -34,7 +34,6 @@ export class ChatGateway
   }
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer() io: Server;
-
   afterInit() {
     this.logger.log('Initialized');
   }
@@ -47,6 +46,8 @@ export class ChatGateway
       client.disconnect();
       return;
     }
+    console.log(process.env.WEBSOCKET_PORT);
+
     try {
       const decodedToken = await this.jwtService.verifyAsync(token, {
         secret: process.env.jwtSecretKey,

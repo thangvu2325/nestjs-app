@@ -84,7 +84,6 @@ export class DevicesService extends MysqlBaseService<
         return device.customer?.customer_id === customer_id;
       });
     }
-
     const devicesDtoArray = deviceList.map((device) => {
       const historyLast = device?.history?.sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),

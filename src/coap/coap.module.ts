@@ -1,5 +1,5 @@
 // coap.module.ts
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { CoapService } from './coap.service';
 import { CoapController } from './coap.controller';
 import { DevicesService } from 'src/devices/devices.service';
@@ -15,21 +15,25 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { ChatGateway } from 'src/chat/chat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
+import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
 
 @Module({
   imports: [
     JwtModule,
-    TypeOrmModule.forFeature([ClientSocketEntity]),
-    TypeOrmModule.forFeature([DevicesEntity]),
-    TypeOrmModule.forFeature([BatteryEntity]),
-    TypeOrmModule.forFeature([SensorsEntity]),
-    TypeOrmModule.forFeature([SignalEntity]),
-    TypeOrmModule.forFeature([SimEntity]),
-    TypeOrmModule.forFeature([HistoryEntity]),
-    TypeOrmModule.forFeature([CustomersEntity]),
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([
+      ClientSocketEntity,
+      DevicesEntity,
+      BatteryEntity,
+      SensorsEntity,
+      SignalEntity,
+      SimEntity,
+      HistoryEntity,
+      CustomersEntity,
+      UserEntity,
+      CoapClientIpAddressEntity,
+    ]),
   ],
   controllers: [CoapController],
-  providers: [CoapService, DevicesService, ChatGateway],
+  providers: [CoapService, DevicesService, ChatGateway, Logger],
 })
 export class CoapModule {}

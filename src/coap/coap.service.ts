@@ -1,5 +1,5 @@
 // coap.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
 import { createServer, request } from 'coap';
@@ -8,6 +8,7 @@ import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { BatteryDto } from 'src/devices/dto/battery.dto';
+import { CoapClient } from 'node-coap-client';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
 import { HistoryDto } from 'src/devices/dto/history.dto';
 import { SensorsDto } from 'src/devices/dto/sensors.dto';
@@ -22,10 +23,10 @@ import { SimEntity } from 'src/devices/entities/sim.entity';
 import { Repository } from 'typeorm';
 import { DataCoapType } from 'types/type';
 import { URL } from 'url';
+import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
 @Injectable()
 export class CoapService {
   private server: any;
-
   constructor(
     @InjectRepository(DevicesEntity)
     private readonly devicesReposity: Repository<DevicesEntity>,
@@ -41,40 +42,115 @@ export class CoapService {
     private readonly simReposity: Repository<SimEntity>,
     @InjectRepository(HistoryEntity)
     private readonly historyRepository: Repository<HistoryEntity>,
+    @InjectRepository(CoapClientIpAddressEntity)
+    private readonly coapClientIpAdressRepository: Repository<CoapClientIpAddressEntity>,
     private readonly devicesServices: DevicesService,
     private readonly chatGateWay: ChatGateway,
+    private readonly logger: Logger,
   ) {
-    this.server = createServer();
+    this.coapClientIpAdressRepository.clear();
+    this.server = createServer({
+      clientIdentifier: () => {
+        return 'abc';
+      },
+    });
   }
-  startServer() {
+
+  async startServer() {
+    this.server.close(async () => {
+      await this.coapClientIpAdressRepository.clear();
+    });
     this.server.on('request', async (req, res) => {
       // Tạo một đối tượng URL từ URL yêu cầu
+      this.logger.log(
+        'Client connected: ' + req.rsinfo.address + ':' + req.rsinfo.port,
+      );
+      const ipClient = 'coap://' + req.rsinfo.address + ':' + req.rsinfo.port;
       const requestUrl = new URL(req.url, `coap://${req.headers['Host']}`);
-
+      this.logger.log(requestUrl.pathname);
       // Lấy các tham số truy vấn từ URL
       const queryParams = requestUrl.searchParams;
 
       // In ra các tham số truy vấn
       queryParams.forEach((value, key) => {
-        console.log(`Param: ${key}, Value: ${value}`);
+        this.logger.log(`Param: ${key}, Value: ${value}`);
       });
       let payload = '';
       req.on('data', (data) => {
         payload += data;
       });
-      if (requestUrl.pathname === '/test') {
-        console.log(JSON.stringify('Hello Coap'));
-      } else {
+      if (requestUrl.pathname === '/.well-known/core') {
+        const resourceDescriptions =
+          '</test>;ct=0,</device>;ct=0,</connection>;ct=0';
+
+        // Send the resource descriptions in the response
+        res.setOption('Content-Format', 'application/link-format');
+        res.end(resourceDescriptions);
+      } else if (requestUrl.pathname === '/connection') {
+        req.on('end', async () => {
+          if (!isJSON(payload)) {
+            this.logger.warn('Dữ liệu không hợp lệ');
+            res.end('Dữ liệu không hợp lệ');
+            return;
+          }
+          this.logger.log(payload);
+          const data: { deviceId: string } = JSON.parse(payload) as {
+            deviceId: string;
+          };
+          const deviceFound = await this.devicesReposity.findOne({
+            where: {
+              deviceId: data.deviceId,
+            },
+          });
+          if (!deviceFound) {
+            this.logger.warn('Không tìm thấy thiết bị');
+            res.end('Khong tim thay thiet bi');
+          } else {
+            const coapClientFound =
+              await this.coapClientIpAdressRepository.findOne({
+                where: {
+                  ip: ipClient,
+                },
+              });
+            if (!coapClientFound) {
+              try {
+                await this.coapClientIpAdressRepository.save({
+                  ip: ipClient,
+                } as CoapClientIpAddressEntity);
+                res.end(`Kết nối thành công với thiết bị ${data.deviceId}`);
+                this.logger.log(
+                  `Kết nối thành công với thiết bị ${data.deviceId}`,
+                );
+              } catch (error) {
+                res.end(`Kết nối thất bại với thiết bị ${data.deviceId}`);
+                this.logger.error(
+                  `Kết nối thất bại với thiết bị ${data.deviceId}`,
+                );
+              }
+            } else {
+              res.end(`Bạn đã kết nối rổi với thiết bị ${data.deviceId}`);
+              this.logger.error(
+                `Bạn đã kết nối rổi với thiết bị ${data.deviceId}`,
+              );
+            }
+          }
+        });
+      } else if (requestUrl.pathname === '/hello') {
+        req.on('end', () => {
+          this.logger.log(payload);
+        });
+      } else if (requestUrl.pathname === '/device') {
         req.on('end', async () => {
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
-          console.log(payload);
-          if (!isJSON(payload)) {
-            console.log('Dữ liệu không hợp lệ');
-            return;
-          }
           switch (req.method) {
             case 'POST':
+              // this.logger.log(payload);
+              if (!isJSON(payload)) {
+                this.logger.error('Dữ liệu không hợp lệ');
+                res.end('Dữ liệu không hợp lệ');
+                return;
+              }
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
               if (!isArray(data)) {
                 break;
@@ -115,7 +191,8 @@ export class CoapService {
                 .getOne();
               if (!deviceFound) {
                 // Device not found
-                console.log('Device not found');
+                res.end(`Device not found with id: ${device.deviceId}`);
+                this.logger.log(`Device not found with id: ${device.deviceId}`);
                 break;
               }
               // // Save changes to the database
@@ -149,26 +226,35 @@ export class CoapService {
                     updatedAt: new Date(),
                   }),
                 );
+                res.end(`Update device  ${device.deviceId} thành công`);
                 break;
               } catch (error) {
                 console.error(error);
+                res.end(`Update device thất bại: ${error.message}`);
                 break;
               }
 
             case 'GET':
+              res.end(`Update device thất bại: `);
+
               break;
 
             case 'PUT':
+              res.end(`Update device thất bại: `);
+
               break;
 
             case 'DELETE':
+              res.end(`Update device thất bại: `);
+
               break;
           }
-
-          res.end('Response from COAP server');
         });
+      } else {
+        res.end('Không có path này');
       }
     });
+    // this.server.
   }
   sendRequest() {
     // Tạo một đối tượng yêu cầu CoAP với các tùy chọn cần thiết
@@ -176,7 +262,7 @@ export class CoapService {
       const req = request({
         method: 'POST', // Phương thức yêu cầu
         hostname: 'localhost', // Tên máy chủ đích
-        pathname: '/test', // Đường dẫn đích
+        pathname: '/hello', // Đường dẫn đích
         query: 'param1=value1&param2=value2',
         confirmable: true, // Yêu cầu xác nhận
         port: Number(process.env.COAP_PORT),
@@ -190,8 +276,8 @@ export class CoapService {
           responsePayload += data;
         });
         res.on('end', () => {
-          console.log('Status code:', res.code);
-          console.log('Response payload:', responsePayload);
+          this.logger.log('Status code:', res.code);
+          this.logger.log('Response payload:', responsePayload);
         });
       });
 
@@ -199,9 +285,41 @@ export class CoapService {
         // Xử lý lỗi nếu có
         console.error('Request error:', err.message);
       });
-
-      // Gửi yêu cầu với payload là 'Hello from CoAP client'
-      req.end('Kết nối coap');
+      req.end(
+        `Kết nối Coap thành công với Port ${Number(process.env.COAP_PORT)}`,
+      );
     });
+  }
+  async sendRequestToClient(deviceId: string, message: string) {
+    const deviceCoapClient = await this.coapClientIpAdressRepository.findOne({
+      where: {
+        deviceId,
+      },
+    });
+    if (!deviceCoapClient) {
+    } else {
+      await CoapClient.tryToConnect(deviceCoapClient.ip).then((result) => {
+        if (result === true) {
+          CoapClient.request(
+            deviceCoapClient.ip,
+            'post',
+            Buffer.from(message),
+            {
+              keepAlive: false,
+              confirmable: true,
+              retransmit: true,
+            },
+          )
+            .then((response) => {
+              this.logger.log('Response:', response.payload.toString());
+            })
+            .catch((err) => {
+              console.error('Error:', err);
+            });
+        } else {
+          this.logger.warn('Thiết bị này hiện không kết nối');
+        }
+      });
+    }
   }
 }

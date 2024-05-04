@@ -30,16 +30,16 @@ export type DataCoapType = [
     testId: 'CELLULAR_SIGNAL';
     details: {
       Operator: string;
-      band: string;
-      EARFCN: string;
-      PCI: string;
-      connectionStatus: string;
+      band: number;
+      EARFCN: number;
+      PCI: number;
+      connectionStatus: number;
       ipAddress: string;
-      RSRP: string;
-      RSSI: string;
-      RSRQ: string;
-      T3324: string;
-      T3412: string;
+      RSRP: number;
+      RSSI: number;
+      RSRQ: number;
+      T3324: number;
+      T3412: number;
       tac: string;
     };
   },

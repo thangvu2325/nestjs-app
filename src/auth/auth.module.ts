@@ -14,11 +14,34 @@ import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
+import { CoapService } from 'src/coap/coap.service';
+import { SensorsEntity } from 'src/devices/entities/sensors.entity';
+import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
+import { ChatGateway } from 'src/chat/chat.gateway';
+import { BatteryEntity } from 'src/devices/entities/battery.entity';
+import { SignalEntity } from 'src/devices/entities/signal.entity';
+import { SimEntity } from 'src/devices/entities/sim.entity';
+import { HistoryEntity } from 'src/devices/entities/history.entity';
+import { DevicesService } from 'src/devices/devices.service';
+import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CustomersEntity, DevicesEntity, VerifyEntity]), // Add DevicesEntity here
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([
+      CustomersEntity,
+      DevicesEntity,
+      VerifyEntity,
+      UserEntity,
+      SensorsEntity,
+      DevicesEntity,
+      BatteryEntity,
+      SensorsEntity,
+      SignalEntity,
+      SimEntity,
+      HistoryEntity,
+      CoapClientIpAddressEntity,
+      ClientSocketEntity,
+    ]), // Add DevicesEntity here
     UsersModule,
     CustomersModule,
     RedisModule,
@@ -32,6 +55,9 @@ import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
     MailService,
     CustomersService,
     Logger,
+    CoapService,
+    ChatGateway,
+    DevicesService,
   ],
   exports: [AuthService],
 })

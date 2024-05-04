@@ -14,6 +14,13 @@ import { SimEntity } from 'src/devices/entities/sim.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
+import { CoapService } from 'src/coap/coap.service';
+import { HistoryEntity } from 'src/devices/entities/history.entity';
+import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
+import { ChatGateway } from 'src/chat/chat.gateway';
+import { JwtModule } from '@nestjs/jwt';
+import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
+import { CoapModule } from 'src/coap/coap.module';
 
 @Module({
   imports: [
@@ -26,7 +33,11 @@ import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
       SensorsEntity,
       SignalEntity,
       SimEntity,
+      HistoryEntity,
+      CoapClientIpAddressEntity,
+      ClientSocketEntity,
     ]),
+    JwtModule,
   ],
   controllers: [CustomersController],
   providers: [
@@ -36,6 +47,8 @@ import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
     UsersService,
     DevicesService,
     Logger,
+    CoapService,
+    ChatGateway,
   ],
   exports: [CustomersService],
 })

@@ -9,6 +9,7 @@ import { DevicesDto } from 'src/devices/dto/devices.dto';
 
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { CoapService } from 'src/coap/coap.service';
 
 @Injectable()
 export class CustomersService extends MysqlBaseService<
@@ -22,6 +23,7 @@ export class CustomersService extends MysqlBaseService<
     private readonly usersReposity: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly devicesReposity: Repository<DevicesEntity>,
+    private readonly coapService: CoapService,
   ) {
     super(customersReposity, CustomersDto);
   }
@@ -126,6 +128,10 @@ export class CustomersService extends MysqlBaseService<
     if (deviceFound.secretKey !== Dto.secretKey) {
       return { result: 'Mã bí mật không đúng' };
     }
+    await this.coapService.sendRequestToClient(
+      deviceFound.deviceId,
+      'kết nối thành công',
+    );
     customerFound.devices.push(deviceFound);
     await this.customersReposity.save(customerFound);
     return { result: 'thành công' };

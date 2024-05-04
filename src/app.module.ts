@@ -24,6 +24,7 @@ import { HistoryEntity } from './devices/entities/history.entity';
 import { ClientSocketEntity } from './chat/clientSocket.entity';
 import { ChatModule } from './chat/chat.module';
 import { VerifyEntity } from './users/entity/verifyKey.entity';
+import { CoapClientIpAddressEntity } from './coap/coapClientIpAddress.entity';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { VerifyEntity } from './users/entity/verifyKey.entity';
           HistoryEntity,
           ClientSocketEntity,
           VerifyEntity,
+          CoapClientIpAddressEntity,
         ],
         synchronize: true,
       }),
