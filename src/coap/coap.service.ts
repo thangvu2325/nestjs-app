@@ -145,7 +145,7 @@ export class CoapService {
           const history: HistoryDto = {} as HistoryDto;
           switch (req.method) {
             case 'POST':
-              // this.logger.log(payload);
+              this.logger.log(payload);
               if (!isJSON(payload)) {
                 this.logger.error('Dữ liệu không hợp lệ');
                 res.end('Dữ liệu không hợp lệ');
