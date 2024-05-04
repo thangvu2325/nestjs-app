@@ -143,14 +143,14 @@ export class CoapService {
         req.on('end', async () => {
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
+          this.logger.log(payload);
+          if (!isJSON(payload)) {
+            this.logger.error('Dữ liệu không hợp lệ');
+            res.end('Dữ liệu không hợp lệ');
+            return;
+          }
           switch (req.method) {
             case 'POST':
-              this.logger.log(payload);
-              if (!isJSON(payload)) {
-                this.logger.error('Dữ liệu không hợp lệ');
-                res.end('Dữ liệu không hợp lệ');
-                return;
-              }
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
               if (!isArray(data)) {
                 break;

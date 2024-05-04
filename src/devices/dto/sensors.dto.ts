@@ -3,7 +3,7 @@ import { BaseDto } from 'src/common/base.dto';
 
 export class SensorsDto extends BaseDto {
   @Expose()
-  AlarmSatus: number;
+  AlarmSatus: boolean;
   @Expose()
   SmokeValue: number;
   @Expose()

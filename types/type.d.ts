@@ -8,7 +8,7 @@ export type DataCoapType = [
   {
     testId: 'SENSOR';
     details: {
-      AlarmSatus: number;
+      AlarmSatus: boolean;
       SmokeValue: number;
       Temperature: number;
       Humidity: number;
