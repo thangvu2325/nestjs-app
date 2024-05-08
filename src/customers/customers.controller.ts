@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CustomersDto } from './customers.dto';
 import { UsersService } from 'src/users/users.service';
@@ -37,11 +45,23 @@ export class CustomersController {
   }
   @Delete('/device/:customer_id/:deviceId')
   delelteDevice(
-    @Body() Dto: DevicesDto,
     @Param('customer_id') customer_id: string,
+    @Param('deviceId') deviceId: string,
   ): Promise<{
     result: string;
   }> {
-    return this.customersService.addDevice(Dto, customer_id);
+    return this.customersService.deleteDevice(deviceId, customer_id);
+  }
+  // @UseGuards(JwtGuard)
+  @Put('/device/:customer_id/:deviceId')
+  updateDevice(
+    @Param() params: { customer_id: string; deviceId: string },
+    @Body() dto: DevicesDto,
+  ): Promise<{ result: string }> {
+    return this.customersService.updateDevice(
+      dto,
+      params.customer_id,
+      params.deviceId,
+    );
   }
 }

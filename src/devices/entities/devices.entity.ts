@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 
@@ -8,10 +8,13 @@ import { HistoryEntity } from './history.entity';
   name: 'devices',
 })
 export class DevicesEntity extends BaseEntity {
-  @ManyToOne(() => CustomersEntity, (customer) => customer.devices)
-  customer: CustomersEntity;
+  @ManyToMany(() => CustomersEntity, (customer) => customer.devices)
+  @JoinTable()
+  customers: CustomersEntity[];
   @Column({ unique: true })
   deviceId: string;
+  @Column({ default: '' })
+  deviceName: string;
   @Column({ unique: true })
   secretKey: string;
   @OneToMany(() => HistoryEntity, (history) => history.device)

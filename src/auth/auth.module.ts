@@ -24,6 +24,8 @@ import { SimEntity } from 'src/devices/entities/sim.entity';
 import { HistoryEntity } from 'src/devices/entities/history.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
+import { MessageService } from 'src/message/message.service';
+import { Message } from 'src/message/message.entity';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
       SimEntity,
       HistoryEntity,
       CoapClientIpAddressEntity,
+      Message,
       ClientSocketEntity,
     ]), // Add DevicesEntity here
     UsersModule,
@@ -58,6 +61,7 @@ import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
     CoapService,
     ChatGateway,
     DevicesService,
+    MessageService,
   ],
   exports: [AuthService],
 })

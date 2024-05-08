@@ -22,11 +22,14 @@ import { CustomersService } from 'src/customers/customers.service';
 import { LoggerService } from 'src/logger/logger.service';
 import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
+import { MessageService } from 'src/message/message.service';
+import { Message } from 'src/message/message.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       CustomersEntity,
+      Message,
       UserEntity,
       VerifyEntity,
       DevicesEntity,
@@ -54,6 +57,7 @@ import { UsersService } from 'src/users/users.service';
     UsersService,
     DevicesService,
     Logger,
+    MessageService,
   ],
   exports: [DevicesService],
 })

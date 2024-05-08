@@ -25,6 +25,8 @@ import { ClientSocketEntity } from './chat/clientSocket.entity';
 import { ChatModule } from './chat/chat.module';
 import { VerifyEntity } from './users/entity/verifyKey.entity';
 import { CoapClientIpAddressEntity } from './coap/coapClientIpAddress.entity';
+import { Room } from './room/room.entity';
+import { Message } from './message/message.entity';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { CoapClientIpAddressEntity } from './coap/coapClientIpAddress.entity';
           ClientSocketEntity,
           VerifyEntity,
           CoapClientIpAddressEntity,
+          Room,
+          Message,
         ],
         synchronize: true,
       }),

@@ -1,8 +1,17 @@
-import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  OneToOne,
+  JoinColumn,
+  OneToMany,
+  ManyToMany,
+} from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { IsEmail, IsPhoneNumber } from 'class-validator';
 import { VerifyEntity } from './verifyKey.entity';
+import { Room } from 'src/room/room.entity';
+import { Message } from 'src/message/message.entity';
 
 @Entity({
   name: 'user',
@@ -36,4 +45,13 @@ export class UserEntity extends BaseEntity {
   @OneToOne(() => VerifyEntity)
   @JoinColumn()
   verify: VerifyEntity;
+
+  @OneToMany(() => Message, (message) => message.owner)
+  messages: Message[];
+
+  @OneToMany(() => Room, (room) => room.owner)
+  rooms: Room[];
+
+  @ManyToMany(() => Room, (room) => room.members)
+  joinedRooms: Room[];
 }

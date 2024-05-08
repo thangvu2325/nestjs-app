@@ -20,6 +20,8 @@ import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
 import { ChatGateway } from 'src/chat/chat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
+import { MessageService } from 'src/message/message.service';
+import { Message } from 'src/message/message.entity';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
       VerifyEntity,
       UserEntity,
       DevicesEntity,
+      Message,
       BatteryEntity,
       SensorsEntity,
       SignalEntity,
@@ -48,6 +51,7 @@ import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
     Logger,
     CoapService,
     ChatGateway,
+    MessageService,
   ],
   exports: [CustomersService],
 })

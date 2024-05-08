@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -12,10 +11,12 @@ import {
 } from '@nestjs/websockets';
 
 import { Server, Socket } from 'socket.io';
-import { ClientSocketEntity } from './clientSocket.entity';
 import { Repository } from 'typeorm';
+import { ClientSocketEntity } from './clientSocket.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
+import { CreateMessageDto } from 'src/message/dto/create-message.dto';
+import { MessageService } from 'src/message/message.service';
 
 @WebSocketGateway(55555, { cors: true })
 export class ChatGateway
@@ -24,99 +25,88 @@ export class ChatGateway
   constructor(
     private jwtService: JwtService,
     @InjectRepository(ClientSocketEntity)
-    private readonly clientSocketReposity: Repository<ClientSocketEntity>,
+    private readonly clientSocketRepository: Repository<ClientSocketEntity>,
     @InjectRepository(UserEntity)
-    private readonly userReposity: Repository<UserEntity>,
+    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
-    private readonly deviceReposity: Repository<DevicesEntity>,
-  ) {
-    this.clientSocketReposity.clear();
-  }
+    private readonly deviceRepository: Repository<DevicesEntity>,
+    private readonly messageService: MessageService,
+  ) {}
+
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer() io: Server;
-  afterInit() {
+
+  async afterInit() {
     this.logger.log('Initialized');
+    this.io.setMaxListeners(20);
   }
+
   async handleConnection(client: Socket) {
-    const token = client.handshake.auth.token;
-    const userId = client.handshake.auth.userId;
+    // const token = client.handshake.auth.token;
+    // const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
-    if (!token) {
-      client.disconnect();
-      return;
-    }
-    console.log(process.env.WEBSOCKET_PORT);
-
-    try {
-      const decodedToken = await this.jwtService.verifyAsync(token, {
-        secret: process.env.jwtSecretKey,
-      });
-
-      if (!decodedToken || !userId) {
-        client.disconnect();
-        return;
-      }
-
-      const userFound = userId
-        ? await this.userReposity.findOne({
-            where: {
-              id: userId,
-            },
-          })
-        : false;
-      if (!userFound) {
-        this.logger.log(`Khong ton tai nguoi dung nay`);
-        client.disconnect();
-        return;
-      }
-      await this.clientSocketReposity.save({
-        clientId: client.id,
-        userId: userId,
-      });
-
-      this.logger.log(
-        `Client id: ${client.id} có userId: ${client.handshake.auth.userId} connected`,
-      );
-      this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    } catch (error) {
-      console.log(error);
-      client.disconnect();
-    }
+    client.setMaxListeners(20);
+    // if (!token || !userId) {
+    //   client.disconnect();
+    //   return;
+    // }
+    this.logger.log(`Client id: ${client.id} connected`);
+    this.logger.debug(`Number of connected clients: ${sockets.size}`);
+    // try {
+    //   const decodedToken = await this.jwtService.verifyAsync(token, {
+    //     secret: process.env.jwtSecretKey,
+    //   });
+    //   if (!decodedToken) {
+    //     client.disconnect();
+    //     return;
+    //   }
+    //   const user = await this.userRepository.findOne(userId);
+    //   if (!user) {
+    //     this.logger.log(`User not found`);
+    //     client.disconnect();
+    //     return;
+    //   }
+    //   await this.clientSocketRepository.save({
+    //     clientId: client.id,
+    //     userId: userId,
+    //   });
+    //   this.logger.log(`Client id: ${client.id} connected`);
+    //   this.logger.debug(`Number of connected clients: ${sockets.size}`);
+    // } catch (error) {
+    //   this.logger.error(`Error during connection: ${error.message}`);
+    //   client.disconnect();
+    // }
   }
 
-  async getUserId(deviceId: string): Promise<string | 'not found' | 'error'> {
+  async getUserIdbyDeviceId(
+    deviceId: string,
+  ): Promise<string | 'not found' | 'error'> {
     try {
-      const userList = await this.userReposity
+      const user = await this.userRepository
         .createQueryBuilder('user')
         .leftJoinAndSelect('user.customer', 'customer')
         .leftJoinAndSelect('customer.devices', 'devices')
-        .getMany();
+        .where('devices.deviceId = :deviceId', { deviceId })
+        .getOne();
 
-      const userFound = userList.find((user) => {
-        return user.customer.devices.some((device) => {
-          return device.deviceId === deviceId;
-        });
-      });
-
-      if (!userFound) {
+      if (!user) {
         return 'not found';
       }
 
-      // Assuming userFound has a property called 'id'
-      return userFound.id;
+      return user.id;
     } catch (error) {
-      console.error('Error occurred while fetching user:', error);
+      this.logger.error(`Error fetching user: ${error.message}`);
       return 'error';
     }
   }
+
   async handleDisconnect(client: Socket) {
-    this.logger.log(`Cliend id:${client.id} disconnected`);
-    await this.clientSocketReposity.delete({
-      clientId: client.id,
-    });
+    this.logger.log(`Client id:${client.id} disconnected`);
+    await this.clientSocketRepository.delete({ clientId: client.id });
   }
+
   @SubscribeMessage('ping')
-  handleMessage(client: Socket, data: any) {
+  handleMessagePing(client: Socket, data: any) {
     let count = 0;
     this.logger.log(`Message received from client id: ${client.id}`);
     this.logger.debug(`Payload: ${data}`);
@@ -134,43 +124,69 @@ export class ChatGateway
     };
   }
 
-  async sendDeviceDataToClient(deviceId: string, message: any) {
-    const userId = await this.getUserId(deviceId);
-    const clients = [];
-    const socketClient = await this.clientSocketReposity.find({
+  async sendDeviceDataToClient(
+    deviceId: string,
+    message: any,
+    topic: string = 'deviceMessage',
+  ) {
+    const userId = await this.getUserIdbyDeviceId(deviceId);
+    const clients: string[] = [];
+    const socketClients = await this.clientSocketRepository.find({
       where: {
         userId,
       },
     });
-    if (!socketClient.length) {
-      this.logger.log(`Người dùng không kết nối `);
+    if (!socketClients.length) {
+      this.logger.log(`User not connected`);
+      return;
     }
-    socketClient.forEach((client) => {
-      console.log(client.clientId);
-      const find = clients.findIndex((item) => item === client.clientId);
-      if (find === -1) {
+    for (const client of socketClients) {
+      if (!clients.includes(client.clientId)) {
         clients.push(client.clientId);
-        const clientSocket = this.io.sockets.sockets.get(client.clientId);
-        if (clientSocket) {
-          clientSocket.emit('deviceMessage', message);
-          // You can also use clientSocket.send(message); if it suits your use case better
+        const socket = this.io.sockets.sockets.get(client.clientId);
+        if (socket) {
+          socket.emit(topic, message);
           this.logger.log(`Message sent to client ${client.clientId}`);
         } else {
           this.logger.error(`Client ${client.clientId} not found`);
         }
       }
-    });
-    console.log(clients);
+    }
   }
-  // Method to send message to a client
+
   sendMessageToClient(clientId: string, message: any, topic: string) {
     const clientSocket = this.io.sockets.sockets.get(clientId);
     if (clientSocket) {
       clientSocket.emit(topic, message);
-      // You can also use clientSocket.send(message); if it suits your use case better
       this.logger.log(`Message sent to client ${clientId}`);
     } else {
       this.logger.error(`Client ${clientId} not found`);
     }
+  }
+
+  @SubscribeMessage('join')
+  handleJoin(client: Socket, roomId: number) {
+    client.join(roomId.toString());
+    return roomId;
+  }
+
+  @SubscribeMessage('leave')
+  handleLeave(client: Socket, roomId: number) {
+    client.leave(roomId.toString());
+    return roomId;
+  }
+
+  @SubscribeMessage('message')
+  async handleMessage(client: Socket, createMessageDto: CreateMessageDto) {
+    const message = await this.messageService.createMessage(createMessageDto);
+    client.emit('message', message);
+    client.to(message.room.toString()).emit('message', message);
+  }
+
+  @SubscribeMessage('isTyping')
+  async handleTypingNotification(client: Socket, roomId: CreateMessageDto) {
+    client
+      .to(roomId.toString())
+      .emit('isTyping', `${client.id} typing message...`);
   }
 }

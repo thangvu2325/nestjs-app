@@ -32,8 +32,8 @@ export class CustomersService extends MysqlBaseService<
   ): Promise<{ customers: Array<CustomersDto>; customersCount: number }> {
     const qb = await this.customersReposity
       .createQueryBuilder('customers')
-      .leftJoinAndSelect('customers.devices', 'devices');
-    qb.where('1= 1');
+      .leftJoinAndSelect('customers.devices', 'devices')
+      .where('1= 1');
 
     qb.orderBy('customers.createdAt', 'DESC'); // Corrected the alias to 'posts'
     const customersCount = await qb.getCount();
@@ -44,7 +44,6 @@ export class CustomersService extends MysqlBaseService<
     if ('offset' in query) {
       qb.offset(query.offset);
     }
-
     const customerList = await qb.getMany();
     const customersDtoArray = customerList.map((customer) => {
       console.log(customer);
@@ -103,37 +102,131 @@ export class CustomersService extends MysqlBaseService<
     return { result: 'thành công' };
   }
   async addDevice(
-    Dto: DevicesDto,
-    customer_id: string,
+    dto: DevicesDto,
+    customerId: string,
   ): Promise<{ result: string }> {
-    // Truy vấn user dựa trên userId
-    const customerFound = await this.customersReposity
-      .createQueryBuilder('customer')
-      .leftJoinAndSelect('customer.devices', 'devices')
-      .where('customer.customer_id = :customer_id', {
-        customer_id: customer_id,
-      })
-      .getOne();
-
-    // Kiểm tra xem user có tồn tại hay không
-    if (!customerFound) {
-      return { result: 'không tìm thấy khách hàng' };
-    }
-    const deviceFound = await this.devicesReposity.findOne({
-      where: { deviceId: Dto.deviceId },
+    // Tìm khách hàng dựa trên customerId và load danh sách thiết bị của khách hàng đó
+    const customer = await this.customersReposity.findOne({
+      where: { customer_id: customerId },
+      relations: ['devices'],
     });
-    if (!deviceFound) {
-      return { result: 'không tìm thấy thiết bị' };
+
+    // Kiểm tra xem khách hàng có tồn tại hay không
+    if (!customer) {
+      return { result: 'Không tìm thấy khách hàng' };
     }
-    if (deviceFound.secretKey !== Dto.secretKey) {
+
+    // Tìm thiết bị dựa trên deviceId
+    const device = await this.devicesReposity.findOne({
+      where: { deviceId: dto.deviceId },
+    });
+
+    // Kiểm tra xem thiết bị có tồn tại hay không
+    if (!device) {
+      return { result: 'Không tìm thấy thiết bị' };
+    }
+
+    // Kiểm tra mã bí mật của thiết bị
+    if (device.secretKey !== dto.secretKey) {
       return { result: 'Mã bí mật không đúng' };
     }
+
+    // Gửi yêu cầu kết nối đến thiết bị
     await this.coapService.sendRequestToClient(
-      deviceFound.deviceId,
+      device.deviceId,
       'kết nối thành công',
     );
-    customerFound.devices.push(deviceFound);
-    await this.customersReposity.save(customerFound);
-    return { result: 'thành công' };
+    if (!customer.devices) {
+      customer.devices = []; // Khởi tạo mảng nếu chưa tồn tại
+    }
+    // Thêm thiết bị vào danh sách thiết bị của khách hàng
+    customer.devices.push(device);
+    await this.customersReposity.save(customer);
+    if (!device.customers) {
+      device.customers = []; // Khởi tạo mảng nếu chưa tồn tại
+    }
+    // Thêm khách hàng vào danh sách khách hàng của thiết bị
+    device.customers.push(customer);
+    await this.devicesReposity.save(device);
+
+    return { result: 'Thành công' };
+  }
+  async updateDevice(
+    Dto: DevicesDto,
+    customer_id: string,
+    deviceId: string,
+  ): Promise<{ result: string }> {
+    const customerFound = await this.customersReposity
+      .createQueryBuilder('customers')
+      .leftJoinAndSelect('customers.devices', 'devices')
+      .where({
+        customer_id,
+      })
+      .getOne();
+    if (!customerFound) {
+      return { result: 'Không tìm thấy người dùng' };
+    }
+    const deviceFound = customerFound.devices.find(
+      (device) => device.deviceId === deviceId,
+    );
+    if (!deviceFound) {
+      return {
+        result: `người dùng với ${customer_id} không tìm thấy thiết bị với ${deviceId}`,
+      };
+    }
+    try {
+      await this.devicesReposity.update(deviceFound.id, {
+        ...deviceFound,
+        ...Dto,
+      });
+      return { result: 'Thành công' };
+    } catch (error) {
+      return { result: error.message };
+    }
+  }
+  async deleteDevice(
+    deviceId: string,
+    customerId: string,
+  ): Promise<{ result: string }> {
+    // Tìm khách hàng dựa trên customerId
+    const customer = await this.customersReposity.findOne({
+      where: { customer_id: customerId },
+      relations: ['devices'],
+    });
+
+    // Tìm thiết bị dựa trên deviceId
+    const device = await this.devicesReposity.findOne({
+      where: { deviceId: deviceId },
+      relations: ['customers'],
+    });
+
+    if (!customer) {
+      return { result: 'Không tìm thấy khách hàng' };
+    }
+
+    if (!device) {
+      return { result: 'Không tìm thấy thiết bị' };
+    }
+
+    // Lọc thiết bị ra khỏi danh sách thiết bị của khách hàng
+    customer.devices = customer.devices.filter(
+      (dev) => dev.deviceId !== deviceId,
+    );
+    await this.customersReposity.save(customer);
+
+    // Lọc khách hàng ra khỏi danh sách khách hàng của thiết bị
+    device.customers = device.customers.filter(
+      (cust) => cust.customer_id !== customerId,
+    );
+    await this.devicesReposity.save(device);
+
+    // Xóa mối quan hệ giữa khách hàng và thiết bị
+    await this.devicesReposity
+      .createQueryBuilder()
+      .relation(DevicesEntity, 'customers')
+      .of(device)
+      .remove(customer);
+
+    return { result: 'Thành công' };
   }
 }

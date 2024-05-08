@@ -42,6 +42,26 @@ export class AuthController {
     return await this.userService.requestResetPassword(data.email);
   }
 
+  @UseGuards(JwtGuard)
+  @Post('checkactive')
+  async checkActive(
+    @Body('userId') userId: string,
+  ): Promise<{ result: string }> {
+    return await this.authService.checkActive(userId);
+  }
+
+  @Post('checkemailexist')
+  async checkEmailExis(
+    @Body('email') email: string,
+  ): Promise<{ result: string }> {
+    return await this.authService.checkEmailExist(email);
+  }
+  @Post('checksmsexist')
+  async checkSmsExis(
+    @Body('phone') phone: string,
+  ): Promise<{ result: string }> {
+    return await this.authService.checkSmsExist(phone);
+  }
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

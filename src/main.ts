@@ -30,11 +30,10 @@ async function bootstrap() {
   // Start the application
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   await app.listen(port).then((_value) => {
-    console.log(`Server started at http://localhost:${port}`);
+    console.log(`Server started at Port ${port}`);
   });
   const coapService = app.get(CoapService);
   coapService.startServer();
   coapService.sendRequest();
-  // This is necessary to make the hot-reload work with Docker
 }
 bootstrap();

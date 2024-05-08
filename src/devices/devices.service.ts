@@ -67,10 +67,9 @@ export class DevicesService extends MysqlBaseService<
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
       .leftJoinAndSelect('history.sim', 'sim')
-      .leftJoinAndSelect('devices.customer', 'customers');
+      .leftJoinAndSelect('devices.customers', 'customers');
     qb.where('1 = 1');
     qb.orderBy('devices.createdAt', 'DESC'); // Corrected the alias to 'posts'
-    qb.where('1 = 1');
     if ('limit' in query) {
       qb.limit(query.limit);
     }
@@ -81,7 +80,12 @@ export class DevicesService extends MysqlBaseService<
     let deviceList = await qb.getMany();
     if (customer_id !== 'all') {
       deviceList = deviceList.filter((device) => {
-        return device.customer?.customer_id === customer_id;
+        device.customers.forEach((customer) => {
+          if (customer.customer_id === customer_id) {
+            return true;
+          }
+        });
+        return false;
       });
     }
     const devicesDtoArray = deviceList.map((device) => {
@@ -110,23 +114,21 @@ export class DevicesService extends MysqlBaseService<
         {
           ...device,
           ...data,
-          customer: device.customer
-            ? plainToInstance(
-                CustomersDto,
-                {
-                  ...device.customer,
-                  fullName:
-                    device.customer?.last_name ??
-                    '' + device.customer?.first_name ??
-                    '',
-                },
-                {
-                  excludeExtraneousValues: true,
-                },
-              )
+          customer: device.customers.length
+            ? device.customers.map((customer) => {
+                return plainToInstance(
+                  CustomersDto,
+                  {
+                    ...customer,
+                  },
+                  {
+                    excludeExtraneousValues: true,
+                  },
+                );
+              })
             : null,
 
-          active: device.customer === null ? false : true,
+          active: device.customers === null ? false : true,
         },
         { excludeExtraneousValues: true },
       );
@@ -134,6 +136,7 @@ export class DevicesService extends MysqlBaseService<
 
     return { devices: devicesDtoArray, devicesCount: devicesDtoArray.length };
   }
+
   async saveDevice(Dto: DevicesDto): Promise<{ result: string }> {
     try {
       await this.devicesReposity.save({

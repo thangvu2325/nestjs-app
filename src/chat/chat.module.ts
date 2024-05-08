@@ -14,6 +14,8 @@ import { ChatGateway } from 'src/chat/chat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from './clientSocket.entity';
 import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
+import { MessageService } from 'src/message/message.service';
+import { Message } from 'src/message/message.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -27,10 +29,11 @@ import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
       UserEntity,
       ClientSocketEntity,
       CoapClientIpAddressEntity,
+      Message,
     ]),
     JwtModule,
   ],
   controllers: [],
-  providers: [DevicesService, ChatGateway],
+  providers: [DevicesService, ChatGateway, MessageService],
 })
 export class ChatModule {}

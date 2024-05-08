@@ -1,4 +1,11 @@
-import { Entity, Column, OneToMany, BeforeInsert } from 'typeorm';
+import {
+  Entity,
+  Column,
+  OneToMany,
+  BeforeInsert,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { IsEmail, IsPhoneNumber } from 'class-validator';
 import { NotifiesEntity } from 'src/notifies/notifies.entity';
@@ -25,7 +32,8 @@ export class CustomersEntity extends BaseEntity {
   @Column()
   customer_id: string;
 
-  @OneToMany(() => DevicesEntity, (devices) => devices.customer)
+  @ManyToMany(() => DevicesEntity, (devices) => devices.customers)
+  @JoinTable()
   devices: DevicesEntity[];
 
   @OneToMany(() => NotifiesEntity, (notifies) => notifies.customer)
@@ -41,7 +49,7 @@ export class CustomersEntity extends BaseEntity {
 function generateUniqueId(): string {
   const characters =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const length = 6;
+  const length = 10;
   let uniqueId = '';
 
   for (let i = 0; i < length; i++) {
@@ -53,5 +61,5 @@ function generateUniqueId(): string {
   // Bạn có thể thêm logic kiểm tra tính duy nhất tại đây, ví dụ kiểm tra trong cơ sở dữ liệu
   // Trong ví dụ này, chúng ta sẽ không thêm logic kiểm tra tính duy nhất
 
-  return 'Customer_' + uniqueId;
+  return 'CR_' + uniqueId;
 }

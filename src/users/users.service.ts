@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersDto } from './users.dto';
 import { Repository } from 'typeorm';
@@ -84,7 +90,6 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     if (!user) {
       throw new NotFoundException('Tạo User Thất bại');
     }
-    await this.createVerifyKey(user.id);
     return await this.customerService.saveCustomer(user?.id, {
       email: user?.email,
       phone: user?.phone,
@@ -156,7 +161,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
       .getOne();
     if (!userFounded) {
       this.logger.error('Không tìm thấy user');
-      return { result: 'thất bại' };
+      throw new HttpException('Không tìm thấy user', HttpStatus.FORBIDDEN);
     }
     const secretKey = Math.floor(100000 + Math.random() * 900000);
     const verify = await this.verifyReposity.save({
@@ -165,7 +170,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     });
     if (!verify) {
       this.logger.error('Tạo verify key thất bại');
-      return { result: 'thất bại' };
+      throw new HttpException('Tạo verify key thất bại', HttpStatus.FORBIDDEN);
     }
     userFounded.verify = verify;
     await this.userReposity.update(userFounded.id, userFounded);
@@ -174,7 +179,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
       userFounded.email,
       userFounded.customer?.last_name + userFounded.customer?.first_name,
     );
-    return { result: 'thành công' };
+    return { result: 'tạo verifyKey thành công' };
   }
   async checkVerifyKey(
     key: number,

@@ -24,6 +24,7 @@ import { Repository } from 'typeorm';
 import { DataCoapType } from 'types/type';
 import { URL } from 'url';
 import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
+import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class CoapService {
   private server: any;
@@ -47,6 +48,7 @@ export class CoapService {
     private readonly devicesServices: DevicesService,
     private readonly chatGateWay: ChatGateway,
     private readonly logger: Logger,
+    private readonly mailService: MailService,
   ) {
     this.coapClientIpAdressRepository.clear();
     this.server = createServer({
@@ -54,6 +56,93 @@ export class CoapService {
         return 'abc';
       },
     });
+  }
+  sendWarningUserList = [] as Array<{
+    deviceId: string;
+    status: 'running' | 'pause' | 'idle';
+  }>;
+  async sendWarning(deviceId) {
+    const warningUser = this.sendWarningUserList.find(
+      (user) => user.deviceId === deviceId,
+    );
+    if (!warningUser) {
+      this.sendWarningUserList.push({ deviceId, status: 'idle' });
+      this.logger.log('Warning: Chức năng gửi cảnh báo đang bắt đầu gửi.');
+    } else if (warningUser.status === 'running') {
+      this.logger.verbose(
+        `Warning: Chức năng gửi cảnh báo đến ${deviceId} đang chạy.`,
+      );
+      return;
+    } else if (warningUser.status === 'pause') {
+      this.logger.verbose('Warning: sendWarning function is already pause.');
+      return;
+    } else if (warningUser.status === 'idle') {
+      warningUser.status = 'running';
+      this.logger.log('Warning: Chức năng gửi cảnh báo đang bắt đầu gửi.');
+    }
+    try {
+      let AlarmTimeout;
+      const checkAlarmStatus = async () => {
+        try {
+          const device = await this.devicesReposity
+            .createQueryBuilder('devices')
+            .leftJoinAndSelect('devices.history', 'history')
+            .leftJoinAndSelect('history.sensors', 'sensors')
+            .leftJoinAndSelect('history.battery', 'battery')
+            .leftJoinAndSelect('history.signal', 'signal')
+            .leftJoinAndSelect('history.sim', 'sim')
+            .leftJoinAndSelect('devices.customers', 'customers')
+            .where('devices.deviceId = :deviceId', { deviceId })
+            .getOne();
+
+          if (!device || !device.history || device.history.length === 0) {
+            throw new Error(
+              `Device history not found for deviceId: ${deviceId}`,
+            );
+          }
+
+          const historyLast = device.history.sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          )[0];
+
+          if (historyLast.sensors.AlarmSatus) {
+            // Thực hiện hành động cảnh báo ở đây
+            // Ví dụ: Gửi email, thông báo, hoặc thực hiện các hành động khẩn cấp khác
+            this.logger.verbose('Warning: Alarm status detected!');
+            const warningUser = this.sendWarningUserList.find(
+              (user) => user.deviceId === deviceId,
+            );
+            device.customers.forEach(async (customer) => {
+              try {
+                await this.mailService.sendEmailWarning(customer.email);
+              } catch (error) {
+                this.logger.warn(error.message);
+              }
+            });
+            warningUser.status = 'running';
+            // Gửi thông báo ở đây
+            AlarmTimeout = setTimeout(
+              checkAlarmStatus,
+              Number(process.env.WARNING_CYCLE),
+            );
+          } else {
+            const warningUser = this.sendWarningUserList.find(
+              (user) => user.deviceId === deviceId,
+            );
+            this.logger.log('Warning: Dừng cảnh báo do không phát hiện cháy.');
+
+            warningUser.status = 'idle';
+            clearTimeout(AlarmTimeout);
+          }
+        } catch (error) {
+          console.error(`Error checking alarm status: ${error.message}`);
+        }
+      };
+      checkAlarmStatus();
+    } catch (error) {
+      console.error(`Error sending warning: ${error.message}`);
+      // Xử lý lỗi ở đây, chẳng hạn như gửi thông báo lỗi
+    }
   }
 
   async startServer() {
@@ -185,9 +274,14 @@ export class CoapService {
               const deviceFound = await this.devicesReposity
                 .createQueryBuilder('devices')
                 .leftJoinAndSelect('devices.history', 'history')
+                .leftJoinAndSelect('history.sensors', 'sensors')
+                .leftJoinAndSelect('history.battery', 'battery')
+                .leftJoinAndSelect('history.signal', 'signal')
+                .leftJoinAndSelect('history.sim', 'sim')
+                .leftJoinAndSelect('devices.customers', 'customers')
                 .where('devices.deviceId = :deviceId', {
                   deviceId: device?.deviceId ?? '',
-                }) // Sửa đổi ở đây
+                })
                 .getOne();
               if (!deviceFound) {
                 // Device not found
@@ -195,7 +289,7 @@ export class CoapService {
                 this.logger.log(`Device not found with id: ${device.deviceId}`);
                 break;
               }
-              // // Save changes to the database
+              // // // Save changes to the database
               try {
                 const sensorsHistory = await this.sensorsReposity.save({
                   ...history?.sensors,
@@ -218,6 +312,9 @@ export class CoapService {
                 } as HistoryEntity);
                 deviceFound.history.push(historyDevice);
                 await this.devicesReposity.save(deviceFound);
+                this.sendWarning(device.deviceId);
+                if (history.sensors.AlarmSatus) {
+                }
                 this.chatGateWay.sendDeviceDataToClient(
                   device.deviceId,
                   JSON.stringify({

@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
@@ -81,13 +86,8 @@ export class AuthService {
     }
   }
   async resendVerifyKey(email: string) {
-    try {
-      const result = await this.userService.createVerifyKey(email);
-      return result;
-    } catch (error) {
-      console.error('Error while verify:', error);
-      throw new Error(`Failed to verify: ${error.message}`);
-    }
+    const result = await this.userService.createVerifyKey(email);
+    return result;
   }
   async logout(userId: string): Promise<{ result: string }> {
     // Lưu Refresh Token vào Redis
@@ -108,6 +108,44 @@ export class AuthService {
     return await this.jwtService.verify(token, {
       secret: process.env.jwtSecretKey,
     });
+  }
+  async checkActive(userId: string): Promise<{ result: string }> {
+    const userFound = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+    if (!userFound) {
+      throw new HttpException('Không tồn tại user này', HttpStatus.FORBIDDEN);
+    }
+    if (!userFound.isActive) {
+      throw new HttpException('Tài khoản chưa kích hoạt', HttpStatus.FORBIDDEN);
+    }
+    return { result: 'Tài Khoản đã kích hoạt!' };
+  }
+  async checkEmailExist(email: string): Promise<{ result: string }> {
+    const userFound = await this.userService.findOneUserWithEmail(email);
+    if (userFound) {
+      throw new HttpException(
+        'Email này đã được sử dụng!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return { result: 'Email này chưa được sử dụng' };
+  }
+  async checkSmsExist(phone: string): Promise<{ result: string }> {
+    const userFound = await this.userRepository.findOne({
+      where: {
+        phone,
+      },
+    });
+    if (userFound) {
+      throw new HttpException(
+        'Số điện thoại này đã được sử dụng!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return { result: 'Số điện thoại này chưa được sử dụng' };
   }
   async refreshToken(userDto: UsersDto) {
     const user = await this.userService.findOneUserWithEmail(userDto.email);

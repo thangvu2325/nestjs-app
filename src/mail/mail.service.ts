@@ -1,9 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
+import { UserEntity } from 'src/users/entity/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class MailService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: UserEntity,
+    private readonly logger: Logger,
+  ) {}
   public example(): void {
     this.mailerService
       .sendMail({
@@ -67,6 +74,26 @@ export class MailService {
       })
       .catch((err) => {
         console.log(err);
+      });
+  }
+  public sendEmailWarning(email: string) {
+    this.mailerService
+      .sendMail({
+        to: email,
+        subject: 'Cảnh báo cháy ✔',
+        from: 'workflowhub@gmail.com',
+        template: 'emailWarning',
+        context: {},
+      })
+      .then(() => {
+        this.logger.log(
+          `Gửi Email đến người dùng với email ${email} thành công`,
+        );
+      })
+      .catch((err) => {
+        this.logger.log(
+          `Gửi Email đến người dùng với email ${email} thất bại với lỗi ${err.message}`,
+        );
       });
   }
 }
