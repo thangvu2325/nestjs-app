@@ -67,14 +67,14 @@ export class CoapService {
     );
     if (!warningUser) {
       this.sendWarningUserList.push({ deviceId, status: 'idle' });
-      this.logger.log('Warning: Chức năng gửi cảnh báo đang bắt đầu gửi.');
+      this.logger.warn('Warning: Chức năng gửi cảnh báo đang bắt đầu gửi.');
     } else if (warningUser.status === 'running') {
       this.logger.verbose(
         `Warning: Chức năng gửi cảnh báo đến ${deviceId} đang chạy.`,
       );
       return;
     } else if (warningUser.status === 'pause') {
-      this.logger.verbose('Warning: sendWarning function is already pause.');
+      this.logger.fatal('Warning: sendWarning function is already pause.');
       return;
     } else if (warningUser.status === 'idle') {
       warningUser.status = 'running';
@@ -108,7 +108,7 @@ export class CoapService {
           if (historyLast.sensors.AlarmSatus) {
             // Thực hiện hành động cảnh báo ở đây
             // Ví dụ: Gửi email, thông báo, hoặc thực hiện các hành động khẩn cấp khác
-            this.logger.verbose('Warning: Alarm status detected!');
+            this.logger.warn('Warning: Alarm status detected!');
             const warningUser = this.sendWarningUserList.find(
               (user) => user.deviceId === deviceId,
             );
@@ -135,12 +135,12 @@ export class CoapService {
             clearTimeout(AlarmTimeout);
           }
         } catch (error) {
-          console.error(`Error checking alarm status: ${error.message}`);
+          this.logger.warn(`Error checking alarm status: ${error.message}`);
         }
       };
       checkAlarmStatus();
     } catch (error) {
-      console.error(`Error sending warning: ${error.message}`);
+      this.logger.warn(`Error sending warning: ${error.message}`);
       // Xử lý lỗi ở đây, chẳng hạn như gửi thông báo lỗi
     }
   }

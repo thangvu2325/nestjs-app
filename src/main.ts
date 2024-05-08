@@ -18,7 +18,31 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      tagsSorter: 'alpha',
+      operationsSorter: (a, b) => {
+        const methodsOrder = [
+          'get',
+          'post',
+          'put',
+          'patch',
+          'delete',
+          'options',
+          'trace',
+        ];
+        let result =
+          methodsOrder.indexOf(a.get('method')) -
+          methodsOrder.indexOf(b.get('method'));
+
+        if (result === 0) {
+          result = a.get('path').localeCompare(b.get('path'));
+        }
+
+        return result;
+      },
+    },
+  });
 
   app.useGlobalPipes(new ValidationPipe());
 
