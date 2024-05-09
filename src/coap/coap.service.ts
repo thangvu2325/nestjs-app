@@ -441,8 +441,8 @@ export class CoapService {
             Buffer.from(message),
             {
               keepAlive: false,
-              confirmable: true,
-              retransmit: true,
+              confirmable: false,
+              retransmit: false,
             },
           )
             .then((response) => {
