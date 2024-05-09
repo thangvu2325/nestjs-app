@@ -79,7 +79,6 @@ export class AuthController {
   async refreshToken(@Request() req) {
     return await this.authService.refreshToken(req.user);
   }
-
   @UseGuards(JwtGuard)
   @Post('logout')
   async logout(@Body() user: UsersDto): Promise<{ result: string }> {

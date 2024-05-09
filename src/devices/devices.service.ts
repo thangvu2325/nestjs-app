@@ -80,12 +80,9 @@ export class DevicesService extends MysqlBaseService<
     let deviceList = await qb.getMany();
     if (customer_id !== 'all') {
       deviceList = deviceList.filter((device) => {
-        device.customers.forEach((customer) => {
-          if (customer.customer_id === customer_id) {
-            return true;
-          }
+        return device.customers.some((customer) => {
+          return customer.customer_id === customer_id;
         });
-        return false;
       });
     }
     const devicesDtoArray = deviceList.map((device) => {

@@ -46,7 +46,6 @@ export class CustomersService extends MysqlBaseService<
     }
     const customerList = await qb.getMany();
     const customersDtoArray = customerList.map((customer) => {
-      console.log(customer);
       return plainToClass(
         CustomersDto,
         {

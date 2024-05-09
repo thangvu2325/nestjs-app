@@ -91,7 +91,7 @@ export class AuthService {
   }
   async logout(userId: string): Promise<{ result: string }> {
     // Lưu Refresh Token vào Redis
-    await this.redisTokenService.deleteTokenForUser(userId);
+    await this.redisTokenService.delRFToken(userId);
     return { result: 'success' };
   }
   async validateUser(dto: LoginDto) {

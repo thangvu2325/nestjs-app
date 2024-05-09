@@ -42,61 +42,57 @@ export class ChatGateway
   }
 
   async handleConnection(client: Socket) {
-    // const token = client.handshake.auth.token;
-    // const userId = client.handshake.auth.userId;
+    const token = client.handshake.auth.token;
+    const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
     client.setMaxListeners(20);
-    // if (!token || !userId) {
-    //   client.disconnect();
-    //   return;
-    // }
-    this.logger.log(`Client id: ${client.id} connected`);
-    this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    // try {
-    //   const decodedToken = await this.jwtService.verifyAsync(token, {
-    //     secret: process.env.jwtSecretKey,
-    //   });
-    //   if (!decodedToken) {
-    //     client.disconnect();
-    //     return;
-    //   }
-    //   const user = await this.userRepository.findOne(userId);
-    //   if (!user) {
-    //     this.logger.log(`User not found`);
-    //     client.disconnect();
-    //     return;
-    //   }
-    //   await this.clientSocketRepository.save({
-    //     clientId: client.id,
-    //     userId: userId,
-    //   });
-    //   this.logger.log(`Client id: ${client.id} connected`);
-    //   this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    // } catch (error) {
-    //   this.logger.error(`Error during connection: ${error.message}`);
-    //   client.disconnect();
-    // }
+    if (!token || !userId) {
+      client.disconnect();
+      return;
+    }
+    try {
+      const decodedToken = await this.jwtService.verifyAsync(token, {
+        secret: process.env.jwtSecretKey,
+      });
+      if (!decodedToken) {
+        client.disconnect();
+        return;
+      }
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        this.logger.log(`User not found`);
+        client.disconnect();
+        return;
+      }
+      await this.clientSocketRepository.save({
+        clientId: client.id,
+        userId: userId,
+      });
+      this.logger.log(`Client id: ${client.id} connected`);
+      this.logger.debug(`Number of connected clients: ${sockets.size}`);
+    } catch (error) {
+      this.logger.error(`Error during connection: ${error.message}`);
+      client.disconnect();
+    }
   }
 
-  async getUserIdbyDeviceId(
-    deviceId: string,
-  ): Promise<string | 'not found' | 'error'> {
+  async getUserIdListbyDeviceId(deviceId: string): Promise<Array<string>> {
     try {
-      const user = await this.userRepository
+      const userList = await this.userRepository
         .createQueryBuilder('user')
         .leftJoinAndSelect('user.customer', 'customer')
         .leftJoinAndSelect('customer.devices', 'devices')
         .where('devices.deviceId = :deviceId', { deviceId })
-        .getOne();
+        .getMany();
 
-      if (!user) {
-        return 'not found';
+      if (!userList) {
+        throw 'thiết bị này chưa kết nối với người dùng nào';
       }
 
-      return user.id;
+      return userList.map((user) => user.id);
     } catch (error) {
       this.logger.error(`Error fetching user: ${error.message}`);
-      return 'error';
+      throw 'error';
     }
   }
 
@@ -129,29 +125,31 @@ export class ChatGateway
     message: any,
     topic: string = 'deviceMessage',
   ) {
-    const userId = await this.getUserIdbyDeviceId(deviceId);
+    const userIdList = await this.getUserIdListbyDeviceId(deviceId);
     const clients: string[] = [];
-    const socketClients = await this.clientSocketRepository.find({
-      where: {
-        userId,
-      },
-    });
-    if (!socketClients.length) {
-      this.logger.log(`User not connected`);
-      return;
-    }
-    for (const client of socketClients) {
-      if (!clients.includes(client.clientId)) {
-        clients.push(client.clientId);
-        const socket = this.io.sockets.sockets.get(client.clientId);
-        if (socket) {
-          socket.emit(topic, message);
-          this.logger.log(`Message sent to client ${client.clientId}`);
-        } else {
-          this.logger.error(`Client ${client.clientId} not found`);
+    userIdList.forEach(async (userId) => {
+      const socketClients = await this.clientSocketRepository.find({
+        where: {
+          userId,
+        },
+      });
+      if (!socketClients.length) {
+        this.logger.log(`User not connected`);
+        return;
+      }
+      for (const client of socketClients) {
+        if (!clients.includes(client.clientId)) {
+          clients.push(client.clientId);
+          const socket = this.io.sockets.sockets.get(client.clientId);
+          if (socket) {
+            socket.emit(topic, message);
+            this.logger.log(`Message sent to client ${client.clientId}`);
+          } else {
+            this.logger.error(`Client ${client.clientId} not found`);
+          }
         }
       }
-    }
+    });
   }
 
   sendMessageToClient(clientId: string, message: any, topic: string) {

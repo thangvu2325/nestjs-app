@@ -112,14 +112,24 @@ export class CoapService {
             const warningUser = this.sendWarningUserList.find(
               (user) => user.deviceId === deviceId,
             );
-            device.customers.forEach(async (customer) => {
-              try {
-                await this.mailService.sendEmailWarning(customer.email);
-              } catch (error) {
-                this.logger.warn(error.message);
-              }
-            });
+            // device.customers.forEach(async (customer) => {
+            //   try {
+            //     await this.mailService.sendEmailWarning(customer.email);
+            //   } catch (error) {
+            //     this.logger.warn(error.message);
+            //   }
+            // });
+
+            // await this.chatGateWay.sendDeviceDataToClient(
+            //   device.deviceId,
+            //   'Cảnh báo cháy',
+            //   'fireWarning',
+            // );
             warningUser.status = 'running';
+            await this.sendRequestToClient(
+              device.deviceId,
+              JSON.stringify({ AlarmReport: 0 }),
+            );
             // Gửi thông báo ở đây
             AlarmTimeout = setTimeout(
               checkAlarmStatus,
@@ -170,11 +180,12 @@ export class CoapService {
       });
       if (requestUrl.pathname === '/.well-known/core') {
         const resourceDescriptions =
-          '</test>;ct=0,</device>;ct=0,</connection>;ct=0';
+          '</test>;ct=0,</device>;ct=0,</alarm>;ct=0';
 
         // Send the resource descriptions in the response
         res.setOption('Content-Format', 'application/link-format');
         res.end(resourceDescriptions);
+      } else if (requestUrl.pathname === '/alarm') {
       } else if (requestUrl.pathname === '/connection') {
         req.on('end', async () => {
           if (!isJSON(payload)) {
@@ -205,6 +216,7 @@ export class CoapService {
               try {
                 await this.coapClientIpAdressRepository.save({
                   ip: ipClient,
+                  deviceId: data.deviceId,
                 } as CoapClientIpAddressEntity);
                 res.end(`Kết nối thành công với thiết bị ${data.deviceId}`);
                 this.logger.log(
@@ -238,6 +250,7 @@ export class CoapService {
             res.end('Dữ liệu không hợp lệ');
             return;
           }
+
           switch (req.method) {
             case 'POST':
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
@@ -289,6 +302,30 @@ export class CoapService {
                 this.logger.log(`Device not found with id: ${device.deviceId}`);
                 break;
               }
+              const coapClientFound =
+                await this.coapClientIpAdressRepository.findOne({
+                  where: {
+                    ip: ipClient,
+                  },
+                });
+              if (!coapClientFound) {
+                await this.coapClientIpAdressRepository.save({
+                  ip: ipClient,
+                  deviceId: device.deviceId,
+                } as CoapClientIpAddressEntity);
+                this.logger.log(
+                  `thêm mới ip của thiết bị ${device.deviceId} thành công`,
+                );
+              } else {
+                await this.coapClientIpAdressRepository.update(
+                  coapClientFound.id,
+                  { ip: ipClient },
+                );
+                this.logger.log(
+                  `Cập nhật ip của thiết bị ${device.deviceId} thành công`,
+                );
+              }
+
               // // // Save changes to the database
               try {
                 const sensorsHistory = await this.sensorsReposity.save({
@@ -312,17 +349,18 @@ export class CoapService {
                 } as HistoryEntity);
                 deviceFound.history.push(historyDevice);
                 await this.devicesReposity.save(deviceFound);
-                this.sendWarning(device.deviceId);
-                if (history.sensors.AlarmSatus) {
+                if (history?.sensors?.AlarmSatus) {
+                  this.sendWarning(device.deviceId);
                 }
-                this.chatGateWay.sendDeviceDataToClient(
-                  device.deviceId,
-                  JSON.stringify({
-                    ...historyDevice,
-                    deviceId: device.deviceId,
-                    updatedAt: new Date(),
-                  }),
-                );
+
+                // await this.chatGateWay.sendDeviceDataToClient(
+                //   device.deviceId,
+                //   JSON.stringify({
+                //     ...historyDevice,
+                //     deviceId: device.deviceId,
+                //     updatedAt: new Date(),
+                //   }),
+                // );
                 res.end(`Update device  ${device.deviceId} thành công`);
                 break;
               } catch (error) {

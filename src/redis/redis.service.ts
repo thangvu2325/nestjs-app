@@ -6,34 +6,37 @@ export class RedisService {
   constructor(@Inject('REDIS_CLIENT') private readonly client: RedisClient) {}
 
   async saveRefreshToken(userId: string, token: string): Promise<void> {
-    await this.client.set(
-      userId + ':' + token,
-      'valid',
-      'EX',
-      60 * 60 * 24 * 7,
-    ); // Expires in 7 days
+    const key = `RF_TOKEN:${userId}`;
+    60 * 60 * 24 * 7;
+    await this.set({ key, value: token, expired: 60 * 60 * 24 * 7 });
+  }
+  set(redisData: {
+    key: string;
+    value: string;
+    expired: string | number;
+  }): Promise<'OK'> {
+    const { key, value, expired } = redisData;
+    return this.client.set(key, value, 'EX', expired);
+  }
+  get(key: string): Promise<string | null> {
+    return this.client.get(key);
+  }
+  async isRefreshTokenValid(userId: string): Promise<boolean> {
+    const refreshToken = await this.getRefreshToken(userId);
+    return !!refreshToken;
+  }
+  async getRefreshToken(userId: string) {
+    const key = `RF_TOKEN:${userId}`;
+    const getRfToken = await this.get(key);
+    return getRfToken;
+  }
+  async del(key: string) {
+    return this.client.del(key);
   }
 
-  async isRefreshTokenValid(token: string): Promise<boolean> {
-    const keys = await this.client.keys('*'); // Get all keys (tokens) in Redis
-    // Filter out null values (expired or non-existing tokens)
-    const validTokens = keys.filter((value) => value !== null);
-    const result = !!validTokens.find((value) => {
-      const refreshToken = value.split(':')[1];
-      return refreshToken === token;
-    });
-    return result;
-  }
-  async deleteTokenForUser(userId: string) {
-    const keys = await this.client.keys('*');
-    const validTokens = keys.filter((value) => value !== null);
-    const result = validTokens.find((value) => {
-      const userIdinToken = value.split(':')[0];
-      return userId === userIdinToken;
-    });
-    if (result) {
-      await this.client.del(result);
-    }
+  async delRFToken(sub: string) {
+    const key = `RF_TOKEN:${sub}`;
+    return this.client.del(key);
   }
   async getAllTokens(): Promise<string[]> {
     const keys = await this.client.keys('*'); // Get all keys (tokens) in Redis
@@ -50,7 +53,6 @@ export class RedisService {
       return;
     }
 
-    // Delete all keys (tokens)
     await this.client.del(...keys);
     return { result: 'Đã xóa tất cả Token' };
   }

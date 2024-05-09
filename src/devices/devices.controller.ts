@@ -24,4 +24,10 @@ export class DevicesController {
   createDevice(@Body() Dto: DevicesDto): Promise<{ result: string }> {
     return this.devicessService.saveDevice(Dto);
   }
+  // @Post('/:deviceId/alarm')
+  // ToggleAlarmStatus(
+  //   @Param('deviceId') deviceId: string,
+  // ): Promise<{ result: string }> {
+  //   return this.
+  // }
 }
