@@ -190,12 +190,40 @@ export class CoapService {
       });
       if (requestUrl.pathname === '/.well-known/core') {
         const resourceDescriptions =
-          '</test>;ct=0,</device>;ct=0,</alarm>;ct=0';
+          '</test>;ct=0,</device>;ct=0,</device?deviceId=23232>;ct=1,</alarm>;ct=0';
 
         // Send the resource descriptions in the response
         res.setOption('Content-Format', 'application/link-format');
         res.end(resourceDescriptions);
       } else if (requestUrl.pathname === '/alarm') {
+        req.on('end', async () => {
+          res.setOption('Content-Format', 'application/json');
+          this.logger.log(payload);
+
+          switch (req.method) {
+            case 'POST':
+              if (!isJSON(payload)) {
+                this.logger.error('Dữ liệu không hợp lệ');
+                res.end('Dữ liệu không hợp lệ');
+                return;
+              }
+              const data: { deviceId: string } = JSON.parse(payload) as {
+                deviceId: string;
+              };
+              const deviceGet = await this.devicesReposity.findOne({
+                where: { deviceId: data.deviceId },
+              });
+              if (!deviceGet) {
+                res.code = '4.04';
+                res.end('deviceId không tồn tại');
+                break;
+              }
+              res.code = '2.05';
+              res.type = 'ACK';
+              res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
+              break;
+          }
+        });
       } else if (requestUrl.pathname === '/hello') {
         req.on('end', () => {
           this.logger.log(payload);
