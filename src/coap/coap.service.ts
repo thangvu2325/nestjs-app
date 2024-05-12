@@ -133,11 +133,11 @@ export class CoapService {
                   excludeExtraneousValues: true,
                 });
                 // await this.mailService.sendEmailWarning(customer.email);
-                // await this.notificationService.sendPush(
-                //   userDto,
-                //   'Cảnh báo cháy',
-                //   `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
-                // );
+                await this.notificationService.sendPush(
+                  userDto,
+                  'Cảnh báo cháy',
+                  `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
+                );
               } catch (error) {
                 this.logger.warn(error.message);
               }
