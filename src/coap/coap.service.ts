@@ -407,12 +407,9 @@ export class CoapService {
                 return res.end('Hello ' + req.url.split('/')[1] + '\\n');
 
               // Tạo một observer
-              const interval = setInterval(() => {
-                res.write(JSON.stringify(this.data));
-              }, Number(process.env.WARNING_CYCLE));
+              res.write(JSON.stringify(this.data));
 
               // Khi kết thúc, hủy bỏ observer
-              res.on('finish', () => clearInterval(interval));
               // ObserveReadStream();
               break;
 
