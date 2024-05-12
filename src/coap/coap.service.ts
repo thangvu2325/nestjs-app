@@ -393,6 +393,8 @@ export class CoapService {
               }
 
             case 'GET':
+              res.setOption('Content-Format', 'application/json');
+              res.code = '2.05';
               console.log('mày mới gửi cc gì đó với get');
               res.end(JSON.stringify(this.data));
               break;
