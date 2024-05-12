@@ -61,9 +61,7 @@ export class CoapService {
   ) {
     this.coapClientIpAdressRepository.clear();
     this.server = createServer({
-      clientIdentifier: () => {
-        return 'abc';
-      },
+      sendAcksForNonConfirmablePackets: true,
     });
     // this.observerRead = new ObserveReadStream();
   }
@@ -355,16 +353,15 @@ export class CoapService {
                 break;
               }
               res.code = '2.05';
+              res.type = 'ACK';
               res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
               break;
             case 'PUT':
               res.end(`Update device thất bại: `);
-
               break;
 
             case 'DELETE':
               res.end(`Update device thất bại: `);
-
               break;
           }
         });
@@ -374,7 +371,6 @@ export class CoapService {
     });
     // this.server.
   }
-  data = { AlarmReport: 0 };
   sendRequest() {
     // Tạo một đối tượng yêu cầu CoAP với các tùy chọn cần thiết
     this.server.listen(Number(process.env.COAP_PORT), () => {
