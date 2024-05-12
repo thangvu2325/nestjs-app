@@ -334,7 +334,7 @@ export class CoapService {
                   }),
                 );
                 res.code = '2.05';
-                res.end(`Update device  ${device.deviceId} thành công`);
+                res.end(``);
                 break;
               } catch (error) {
                 console.error(error);
