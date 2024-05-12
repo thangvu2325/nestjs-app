@@ -198,72 +198,21 @@ export class CoapService {
         res.setOption('Content-Format', 'application/link-format');
         res.end(resourceDescriptions);
       } else if (requestUrl.pathname === '/alarm') {
-      } else if (requestUrl.pathname === '/connection') {
-        req.on('end', async () => {
-          if (!isJSON(payload)) {
-            this.logger.warn('Dữ liệu không hợp lệ');
-            res.end('Dữ liệu không hợp lệ');
-            return;
-          }
-          this.logger.log(payload);
-          const data: { deviceId: string } = JSON.parse(payload) as {
-            deviceId: string;
-          };
-          const deviceFound = await this.devicesReposity.findOne({
-            where: {
-              deviceId: data.deviceId,
-            },
-          });
-          if (!deviceFound) {
-            this.logger.warn('Không tìm thấy thiết bị');
-            res.end('Khong tim thay thiet bi');
-          } else {
-            const coapClientFound =
-              await this.coapClientIpAdressRepository.findOne({
-                where: {
-                  ip: ipClient,
-                },
-              });
-            if (!coapClientFound) {
-              try {
-                await this.coapClientIpAdressRepository.save({
-                  ip: ipClient,
-                  deviceId: data.deviceId,
-                } as CoapClientIpAddressEntity);
-                res.end(`Kết nối thành công với thiết bị ${data.deviceId}`);
-                this.logger.log(
-                  `Kết nối thành công với thiết bị ${data.deviceId}`,
-                );
-              } catch (error) {
-                res.end(`Kết nối thất bại với thiết bị ${data.deviceId}`);
-                this.logger.error(
-                  `Kết nối thất bại với thiết bị ${data.deviceId}`,
-                );
-              }
-            } else {
-              res.end(`Bạn đã kết nối rổi với thiết bị ${data.deviceId}`);
-              this.logger.error(
-                `Bạn đã kết nối rổi với thiết bị ${data.deviceId}`,
-              );
-            }
-          }
-        });
       } else if (requestUrl.pathname === '/hello') {
         req.on('end', () => {
           this.logger.log(payload);
         });
       } else if (requestUrl.pathname === '/device') {
         req.on('end', async () => {
+          res.setOption('Content-Format', 'application/json');
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
           this.logger.log(payload);
-          setInterval(() => {
-            this.data.AlarmReport = this.data.AlarmReport === 1 ? 0 : 1;
-          }, 2000);
           switch (req.method) {
             case 'POST':
               if (!isJSON(payload)) {
                 this.logger.error('Dữ liệu không hợp lệ');
+
                 res.end('Dữ liệu không hợp lệ');
                 return;
               }
@@ -384,6 +333,7 @@ export class CoapService {
                     // warningLogs:
                   }),
                 );
+                res.code = '2.05';
                 res.end(`Update device  ${device.deviceId} thành công`);
                 break;
               } catch (error) {
@@ -393,10 +343,17 @@ export class CoapService {
               }
 
             case 'GET':
-              res.setOption('Content-Format', 'application/json');
+              const deviceId = queryParams.get('deviceId');
+              const deviceGet = await this.devicesReposity.findOne({
+                where: { deviceId },
+              });
+              if (!deviceGet) {
+                res.code = '4.04';
+                res.end('deviceId không tồn tại');
+              }
               res.code = '2.05';
               console.log('mày mới gửi cc gì đó với get');
-              res.end(JSON.stringify(this.data));
+              res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
               break;
 
             case 'PUT':
@@ -421,7 +378,7 @@ export class CoapService {
     // Tạo một đối tượng yêu cầu CoAP với các tùy chọn cần thiết
     this.server.listen(Number(process.env.COAP_PORT), () => {
       const req = request({
-        method: 'POST', // Phương thức yêu cầu
+        method: 'GET', // Phương thức yêu cầu
         hostname: 'localhost', // Tên máy chủ đích
         pathname: '/hello', // Đường dẫn đích
         query: 'param1=value1&param2=value2',

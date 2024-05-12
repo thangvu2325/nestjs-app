@@ -265,13 +265,6 @@ export class CustomersService extends MysqlBaseService<
       throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
     }
 
-    // Gửi yêu cầu đến thiết bị để chuyển đổi trạng thái báo động
-    await this.coapService.sendRequestToClient(
-      device.deviceId,
-      JSON.stringify({ AlarmReport: device.AlarmReport === 1 ? 0 : 1 }),
-    );
-
-    // Cập nhật trạng thái của thiết bị trong cơ sở dữ liệu
     device.AlarmReport = device.AlarmReport === 1 ? 0 : 1;
     await this.devicesReposity.save(device);
 
