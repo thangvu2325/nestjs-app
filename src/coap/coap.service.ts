@@ -2,12 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
-import {
-  ObserveReadStream,
-  ObserveWriteStream,
-  createServer,
-  request,
-} from 'coap';
+import { createServer, request } from 'coap';
 import { ChatGateway } from 'src/chat/chat.gateway';
 // import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -191,7 +186,6 @@ export class CoapService {
       this.logger.log(requestUrl.pathname);
       // Lấy các tham số truy vấn từ URL
       const queryParams = requestUrl.searchParams;
-
       // In ra các tham số truy vấn
       queryParams.forEach((value, key) => {
         this.logger.log(`Param: ${key}, Value: ${value}`);
@@ -200,6 +194,7 @@ export class CoapService {
       req.on('data', (data) => {
         payload += data;
       });
+      console.log(3);
       if (requestUrl.pathname === '/.well-known/core') {
         const resourceDescriptions =
           '</test>;ct=0,</device>;ct=0,</alarm>;ct=0';
@@ -403,17 +398,23 @@ export class CoapService {
               }
 
             case 'GET':
+              console.log(2);
               if (req.headers['Observe'] !== 0)
                 return res.end('Hello ' + req.url.split('/')[1] + '\\n');
 
               // Tạo một observer
-              res.write(JSON.stringify(this.data));
+              const interval = setInterval(() => {
+                console.log(1);
+                res.write(JSON.stringify(this.data));
+              }, Number(process.env.WARNING_CYCLE));
 
               // Khi kết thúc, hủy bỏ observer
+              res.on('finish', () => clearInterval(interval));
               // ObserveReadStream();
               break;
 
             case 'PUT':
+              console.log(1);
               res.end(`Update device thất bại: `);
 
               break;
@@ -481,7 +482,7 @@ export class CoapService {
             Buffer.from(message),
             {
               keepAlive: false,
-              confirmable: false,
+              confirmable: true,
               retransmit: true,
             },
           )
@@ -496,5 +497,38 @@ export class CoapService {
         }
       });
     }
+  }
+  async test() {
+    await CoapClient.tryToConnect('coap://localhost:12345').then((result) => {
+      console.log(result);
+      if (result === true) {
+        CoapClient.observe(
+          'coap://localhost:12345/device',
+          'get',
+          (response) => {
+            console.log(response.payload.toString());
+          },
+        )
+          .then(() => {
+            console.log('Successfully started observing');
+          })
+          .catch((error) => {
+            console.log(`Failed to start observing with error: ${error}`);
+          });
+        // CoapClient.request('coap://localhost:12345', 'get', Buffer.from(''), {
+        //   keepAlive: false,
+        //   confirmable: false,
+        //   retransmit: true,
+        // })
+        //   .then((response) => {
+        //     this.logger.log('Response:', response.payload.toString());
+        //   })
+        //   .catch((err) => {
+        //     console.error('Error:', err);
+        //   });
+      } else {
+        this.logger.warn('Thiết bị này hiện không kết nối');
+      }
+    });
   }
 }
