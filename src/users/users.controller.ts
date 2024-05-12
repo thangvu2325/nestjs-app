@@ -6,10 +6,14 @@ import {
   Param,
   Put,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersDto } from './users.dto';
 import { UsersService } from './users.service';
 import { plainToInstance } from 'class-transformer';
+import { NotificationDto } from 'src/notification/dto/create-notification.dto';
+import { UpdateNotificationDto } from 'src/notification/dto/update-notification.dto';
 
 @Controller('users')
 export class UsersController {
@@ -32,11 +36,44 @@ export class UsersController {
     });
   }
   @Put(':id')
-  updateUserById(
-    @Param('id') id: string,
-    @Body() user: UsersDto,
-  ): Promise<{ result: string }> {
-    return this.usersService.update(id, user);
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(@Body() update_dto: any, @Param('id') user_id: string) {
+    return await this.usersService.updateProfile(user_id, update_dto);
+  }
+  @Put('push/enable/:id')
+  @HttpCode(HttpStatus.OK)
+  async enablePush(
+    @Body() update_dto: NotificationDto,
+    @Param('id') user_id: string,
+  ) {
+    return await this.usersService.enablePush(user_id, update_dto);
+  }
+
+  @Put('push/disable/:id')
+  @HttpCode(HttpStatus.OK)
+  async disablePush(
+    @Param('id') user_id: string,
+    @Body() update_dto: UpdateNotificationDto,
+  ) {
+    return await this.usersService.disablePush(user_id, update_dto);
+  }
+  @Post('push/disable/:id')
+  @HttpCode(HttpStatus.OK)
+  async send(
+    @Param('id') user_id: string,
+    @Body() update_dto: UpdateNotificationDto,
+  ) {
+    return await this.usersService.disablePush(user_id, update_dto);
+  }
+  @Get('push/notifications')
+  @HttpCode(HttpStatus.OK)
+  async fetchPusNotifications() {
+    return await this.usersService.getPushNotifications();
+  }
+  @Post('push/notifications/:id')
+  @HttpCode(HttpStatus.OK)
+  async sendNotifications(@Param('id') userId: string) {
+    return this.usersService.sendWarningtoClient(userId, 'test', 'test');
   }
   @Post()
   async createUser(@Body() user: UsersDto): Promise<{ result: string }> {

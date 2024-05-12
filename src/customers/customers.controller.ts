@@ -6,11 +6,14 @@ import {
   Param,
   Post,
   Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CustomersDto } from './customers.dto';
 import { UsersService } from 'src/users/users.service';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('customers')
 export class CustomersController {
@@ -63,5 +66,17 @@ export class CustomersController {
       params.customer_id,
       params.deviceId,
     );
+  }
+  @UseGuards(JwtGuard)
+  @Post('/device/:customer_id/:deviceId')
+  toggleAlarmStatus(
+    @Param('customer_id') customer_id: string,
+    @Param('deviceId') deviceId: string,
+    @Request() req,
+  ): Promise<{
+    result: string;
+  }> {
+    console.log(req.user);
+    return this.customersService.toggleAlarmStatus(deviceId, customer_id);
   }
 }

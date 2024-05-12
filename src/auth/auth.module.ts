@@ -1,6 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
@@ -26,6 +25,10 @@ import { DevicesService } from 'src/devices/devices.service';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
+import { Notifications } from 'src/notification/entities/notification.entity';
+import { NotificationToken } from 'src/notification/entities/notification-token.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -44,8 +47,10 @@ import { Message } from 'src/message/message.entity';
       CoapClientIpAddressEntity,
       Message,
       ClientSocketEntity,
+      Notifications,
+      NotificationToken,
+      WarningLogsEntity,
     ]), // Add DevicesEntity here
-    UsersModule,
     CustomersModule,
     RedisModule,
     PassportModule,
@@ -62,6 +67,7 @@ import { Message } from 'src/message/message.entity';
     ChatGateway,
     DevicesService,
     MessageService,
+    NotificationService,
   ],
   exports: [AuthService],
 })

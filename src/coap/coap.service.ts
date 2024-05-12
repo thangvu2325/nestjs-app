@@ -24,7 +24,11 @@ import { Repository } from 'typeorm';
 import { DataCoapType } from 'types/type';
 import { URL } from 'url';
 import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
-import { MailService } from 'src/mail/mail.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { UserEntity } from 'src/users/entity/user.entity';
+import { plainToInstance } from 'class-transformer';
+import { UsersDto } from 'src/users/users.dto';
+import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 @Injectable()
 export class CoapService {
   private server: any;
@@ -33,6 +37,8 @@ export class CoapService {
     private readonly devicesReposity: Repository<DevicesEntity>,
     @InjectRepository(CustomersEntity)
     private readonly customersReposity: Repository<CustomersEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userReposity: Repository<UserEntity>,
     @InjectRepository(SensorsEntity)
     private readonly sensorsReposity: Repository<SensorsEntity>,
     @InjectRepository(SignalEntity)
@@ -43,12 +49,14 @@ export class CoapService {
     private readonly simReposity: Repository<SimEntity>,
     @InjectRepository(HistoryEntity)
     private readonly historyRepository: Repository<HistoryEntity>,
+    @InjectRepository(WarningLogsEntity)
+    private readonly warningLogsRepository: Repository<WarningLogsEntity>,
     @InjectRepository(CoapClientIpAddressEntity)
     private readonly coapClientIpAdressRepository: Repository<CoapClientIpAddressEntity>,
     private readonly devicesServices: DevicesService,
     private readonly chatGateWay: ChatGateway,
     private readonly logger: Logger,
-    private readonly mailService: MailService,
+    private readonly notificationService: NotificationService,
   ) {
     this.coapClientIpAdressRepository.clear();
     this.server = createServer({
@@ -112,25 +120,32 @@ export class CoapService {
             const warningUser = this.sendWarningUserList.find(
               (user) => user.deviceId === deviceId,
             );
-            // device.customers.forEach(async (customer) => {
-            //   try {
-            //     await this.mailService.sendEmailWarning(customer.email);
-            //   } catch (error) {
-            //     this.logger.warn(error.message);
-            //   }
-            // });
+            device.customers.forEach(async (customer) => {
+              try {
+                const userFound = await this.userReposity.findOne({
+                  where: {
+                    email: customer.email,
+                  },
+                });
+                const userDto = plainToInstance(UsersDto, userFound, {
+                  excludeExtraneousValues: true,
+                });
+                // await this.mailService.sendEmailWarning(customer.email);
+                // await this.notificationService.sendPush(
+                //   userDto,
+                //   'Cảnh báo cháy',
+                //   `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
+                // );
+              } catch (error) {
+                this.logger.warn(error.message);
+              }
+            });
 
-            // await this.chatGateWay.sendDeviceDataToClient(
-            //   device.deviceId,
-            //   'Cảnh báo cháy',
-            //   'fireWarning',
-            // );
             warningUser.status = 'running';
             await this.sendRequestToClient(
               device.deviceId,
               JSON.stringify({ AlarmReport: 0 }),
             );
-            // Gửi thông báo ở đây
             AlarmTimeout = setTimeout(
               checkAlarmStatus,
               Number(process.env.WARNING_CYCLE),
@@ -287,6 +302,7 @@ export class CoapService {
               const deviceFound = await this.devicesReposity
                 .createQueryBuilder('devices')
                 .leftJoinAndSelect('devices.history', 'history')
+                .leftJoinAndSelect('devices.warningLogs', 'warningLogs')
                 .leftJoinAndSelect('history.sensors', 'sensors')
                 .leftJoinAndSelect('history.battery', 'battery')
                 .leftJoinAndSelect('history.signal', 'signal')
@@ -348,19 +364,26 @@ export class CoapService {
                   signal: signalHistory,
                 } as HistoryEntity);
                 deviceFound.history.push(historyDevice);
-                await this.devicesReposity.save(deviceFound);
                 if (history?.sensors?.AlarmSatus) {
+                  const warningLogs = await this.warningLogsRepository.save({
+                    message: `Cảnh báo cháy với thiết bị ${deviceFound.deviceName} có mã thiết bị ${deviceFound.deviceId}`,
+                  } as WarningLogsEntity);
+                  deviceFound.warningLogs.push(warningLogs);
+                  await this.devicesReposity.save(deviceFound);
                   this.sendWarning(device.deviceId);
+                } else {
+                  await this.devicesReposity.save(deviceFound);
                 }
 
-                // await this.chatGateWay.sendDeviceDataToClient(
-                //   device.deviceId,
-                //   JSON.stringify({
-                //     ...historyDevice,
-                //     deviceId: device.deviceId,
-                //     updatedAt: new Date(),
-                //   }),
-                // );
+                await this.chatGateWay.sendDeviceDataToClient(
+                  device.deviceId,
+                  JSON.stringify({
+                    ...historyDevice,
+                    deviceId: device.deviceId,
+                    updatedAt: new Date(),
+                    // warningLogs:
+                  }),
+                );
                 res.end(`Update device  ${device.deviceId} thành công`);
                 break;
               } catch (error) {
@@ -442,7 +465,7 @@ export class CoapService {
             {
               keepAlive: false,
               confirmable: false,
-              retransmit: false,
+              retransmit: true,
             },
           )
             .then((response) => {

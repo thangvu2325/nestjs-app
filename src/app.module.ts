@@ -12,7 +12,6 @@ import { NotifiesEntity } from './notifies/notifies.entity';
 import { CoapModule } from './coap/coap.module';
 import { CustomersModule } from './customers/customers.module';
 import { DevicesEntity } from './devices/entities/devices.entity';
-
 import { SensorsEntity } from './devices/entities/sensors.entity';
 import { BatteryEntity } from './devices/entities/battery.entity';
 import { SimEntity } from './devices/entities/sim.entity';
@@ -27,6 +26,10 @@ import { VerifyEntity } from './users/entity/verifyKey.entity';
 import { CoapClientIpAddressEntity } from './coap/coapClientIpAddress.entity';
 import { Room } from './room/room.entity';
 import { Message } from './message/message.entity';
+import { NotificationModule } from './notification/notification.module';
+import { NotificationToken } from './notification/entities/notification-token.entity';
+import { Notifications } from './notification/entities/notification.entity';
+import { WarningLogsEntity } from './devices/entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -55,6 +58,9 @@ import { Message } from './message/message.entity';
           CoapClientIpAddressEntity,
           Room,
           Message,
+          NotificationToken,
+          Notifications,
+          WarningLogsEntity,
         ],
         synchronize: true,
       }),
@@ -69,6 +75,7 @@ import { Message } from './message/message.entity';
     CoapModule,
     SMSModule,
     ChatModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

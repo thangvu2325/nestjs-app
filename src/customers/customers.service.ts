@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
@@ -112,7 +112,10 @@ export class CustomersService extends MysqlBaseService<
 
     // Kiểm tra xem khách hàng có tồn tại hay không
     if (!customer) {
-      return { result: 'Không tìm thấy khách hàng' };
+      throw new HttpException(
+        `Không tìm thấy khách hàng`,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     // Tìm thiết bị dựa trên deviceId
@@ -122,12 +125,12 @@ export class CustomersService extends MysqlBaseService<
 
     // Kiểm tra xem thiết bị có tồn tại hay không
     if (!device) {
-      return { result: 'Không tìm thấy thiết bị' };
+      throw new HttpException(`Không tìm thấy thiết bị`, HttpStatus.FORBIDDEN);
     }
 
     // Kiểm tra mã bí mật của thiết bị
     if (device.secretKey !== dto.secretKey) {
-      return { result: 'Mã bí mật không đúng' };
+      throw new HttpException(`Mã bí mật không đúng`, HttpStatus.FORBIDDEN);
     }
 
     // Gửi yêu cầu kết nối đến thiết bị
@@ -163,15 +166,19 @@ export class CustomersService extends MysqlBaseService<
       })
       .getOne();
     if (!customerFound) {
-      return { result: 'Không tìm thấy người dùng' };
+      throw new HttpException(
+        `Không tìm thấy người dùng`,
+        HttpStatus.FORBIDDEN,
+      );
     }
     const deviceFound = customerFound.devices.find(
       (device) => device.deviceId === deviceId,
     );
     if (!deviceFound) {
-      return {
-        result: `người dùng với ${customer_id} không tìm thấy thiết bị với ${deviceId}`,
-      };
+      throw new HttpException(
+        `người dùng với ${customer_id} không tìm thấy thiết bị với ${deviceId}`,
+        HttpStatus.FORBIDDEN,
+      );
     }
     try {
       await this.devicesReposity.update(deviceFound.id, {
@@ -200,11 +207,14 @@ export class CustomersService extends MysqlBaseService<
     });
 
     if (!customer) {
-      return { result: 'Không tìm thấy khách hàng' };
+      throw new HttpException(
+        'Không tìm thấy khách hàng',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     if (!device) {
-      return { result: 'Không tìm thấy thiết bị' };
+      throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
     }
 
     // Lọc thiết bị ra khỏi danh sách thiết bị của khách hàng
@@ -225,6 +235,45 @@ export class CustomersService extends MysqlBaseService<
       .relation(DevicesEntity, 'customers')
       .of(device)
       .remove(customer);
+
+    return { result: 'Thành công' };
+  }
+  async toggleAlarmStatus(
+    deviceId: string,
+    customerId: string,
+  ): Promise<{ result: string }> {
+    // Tìm khách hàng dựa trên customerId
+    const customer = await this.customersReposity.findOne({
+      where: { customer_id: customerId },
+      relations: ['devices'],
+    });
+
+    if (!customer) {
+      throw new HttpException(
+        'Không tìm thấy khách hàng',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Tìm thiết bị dựa trên deviceId và đảm bảo rằng nó thuộc về khách hàng hiện tại
+    const device = await this.devicesReposity.findOne({
+      where: { deviceId: deviceId, customers: { id: customer.id } },
+      relations: ['customers'],
+    });
+
+    if (!device) {
+      throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
+    }
+
+    // Gửi yêu cầu đến thiết bị để chuyển đổi trạng thái báo động
+    await this.coapService.sendRequestToClient(
+      device.deviceId,
+      JSON.stringify({ AlarmReport: device.AlarmReport === 1 ? 0 : 1 }),
+    );
+
+    // Cập nhật trạng thái của thiết bị trong cơ sở dữ liệu
+    device.AlarmReport = device.AlarmReport === 1 ? 0 : 1;
+    await this.devicesReposity.save(device);
 
     return { result: 'Thành công' };
   }

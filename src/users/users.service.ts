@@ -16,6 +16,9 @@ import { UserEntity } from './entity/user.entity';
 import { CustomersService } from 'src/customers/customers.service';
 import * as bcrypt from 'bcrypt';
 import { VerifyEntity } from './entity/verifyKey.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationDto } from 'src/notification/dto/create-notification.dto';
+import { UpdateNotificationDto } from 'src/notification/dto/update-notification.dto';
 
 @Injectable()
 export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
@@ -28,6 +31,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     private readonly mailService: MailService,
     private readonly customerService: CustomersService,
     private readonly logger: Logger,
+    private readonly notificationService: NotificationService,
   ) {
     super(userReposity, UsersDto);
   }
@@ -82,6 +86,80 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
 
     return user || null;
   }
+  updateProfile = async (
+    user_id: string,
+    update_dto: UsersDto,
+  ): Promise<any> => {
+    try {
+      const user = await this.userReposity.findOne({
+        where: { id: user_id },
+      });
+      const updated_user = {
+        ...user,
+        ...update_dto,
+      };
+      const saved_user = await this.userReposity.save(updated_user);
+      if (saved_user) {
+        // send push notification
+        await this.notificationService
+          .sendPush(
+            updated_user,
+            'Profiie update',
+            'Your Profile have been updated successfully',
+          )
+          .catch((e) => {
+            console.log('Error sending push notification', e);
+          });
+      }
+      return saved_user;
+    } catch (error) {
+      return error;
+    }
+  };
+  enablePush = async (
+    user_id: string,
+    update_dto: NotificationDto,
+  ): Promise<any> => {
+    const user = await this.userReposity.findOne({
+      where: { id: user_id },
+    });
+    return await this.notificationService.acceptPushNotification(
+      user,
+      update_dto,
+    );
+  };
+  sendWarningtoClient = async (
+    email: string,
+    title: string,
+    body: string,
+  ): Promise<any> => {
+    const user = await this.userReposity.findOne({
+      where: { email: email },
+    });
+    if (!user) {
+      throw new HttpException('Không tìm thấy User', HttpStatus.FORBIDDEN);
+    }
+    const userDto = plainToInstance(UsersDto, user, {
+      excludeExtraneousValues: true,
+    });
+    await this.notificationService.sendPush(userDto, title, body);
+    return 'thành công';
+  };
+  disablePush = async (
+    user_id: string,
+    update_dto: UpdateNotificationDto,
+  ): Promise<any> => {
+    const user = await this.userReposity.findOne({
+      where: { id: user_id },
+    });
+    return await this.notificationService.disablePushNotification(
+      user,
+      update_dto,
+    );
+  };
+  getPushNotifications = async (): Promise<any> => {
+    return await this.notificationService.getNotifications();
+  };
   async createUser(userDto: UsersDto) {
     const user = await this.userReposity.save({
       ...userDto,

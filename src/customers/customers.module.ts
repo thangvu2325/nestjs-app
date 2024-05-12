@@ -22,6 +22,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
+import { Notifications } from 'src/notification/entities/notification.entity';
+import { NotificationToken } from 'src/notification/entities/notification-token.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -38,6 +42,9 @@ import { Message } from 'src/message/message.entity';
       HistoryEntity,
       CoapClientIpAddressEntity,
       ClientSocketEntity,
+      Notifications,
+      NotificationToken,
+      WarningLogsEntity,
     ]),
     JwtModule,
   ],
@@ -52,6 +59,7 @@ import { Message } from 'src/message/message.entity';
     CoapService,
     ChatGateway,
     MessageService,
+    NotificationService,
   ],
   exports: [CustomersService],
 })

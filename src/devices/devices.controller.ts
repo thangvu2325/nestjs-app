@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { DevicesDto } from './dto/devices.dto';
 import { DevicesService } from './devices.service';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('devices')
 export class DevicesController {
@@ -12,7 +13,7 @@ export class DevicesController {
   }> {
     return this.devicessService.findAll({});
   }
-  // @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard)
   @Get('/customers/:customer_id')
   getAllDeviceforUser(@Param() data: { customer_id: string }): Promise<{
     devices: Array<DevicesDto>;
@@ -24,10 +25,4 @@ export class DevicesController {
   createDevice(@Body() Dto: DevicesDto): Promise<{ result: string }> {
     return this.devicessService.saveDevice(Dto);
   }
-  // @Post('/:deviceId/alarm')
-  // ToggleAlarmStatus(
-  //   @Param('deviceId') deviceId: string,
-  // ): Promise<{ result: string }> {
-  //   return this.
-  // }
 }

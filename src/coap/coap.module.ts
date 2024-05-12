@@ -19,6 +19,13 @@ import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
 import { MailService } from 'src/mail/mail.service';
+import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
+import { CustomersService } from 'src/customers/customers.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationToken } from 'src/notification/entities/notification-token.entity';
+import { Notifications } from 'src/notification/entities/notification.entity';
+import { UsersService } from 'src/users/users.service';
+import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -29,12 +36,16 @@ import { MailService } from 'src/mail/mail.service';
       BatteryEntity,
       SensorsEntity,
       SignalEntity,
+      VerifyEntity,
       SimEntity,
       HistoryEntity,
+      NotificationToken,
+      Notifications,
       CustomersEntity,
       Message,
       UserEntity,
       CoapClientIpAddressEntity,
+      WarningLogsEntity,
     ]),
   ],
   controllers: [CoapController],
@@ -45,6 +56,10 @@ import { MailService } from 'src/mail/mail.service';
     Logger,
     MessageService,
     MailService,
+    CustomersService,
+    NotificationService,
+    UsersService,
   ],
+  exports: [CoapService],
 })
 export class CoapModule {}

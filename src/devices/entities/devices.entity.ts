@@ -3,6 +3,7 @@ import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 
 import { HistoryEntity } from './history.entity';
+import { WarningLogsEntity } from './warningLogs.entity';
 
 @Entity({
   name: 'devices',
@@ -19,4 +20,12 @@ export class DevicesEntity extends BaseEntity {
   secretKey: string;
   @OneToMany(() => HistoryEntity, (history) => history.device)
   history: HistoryEntity[];
+  @OneToMany(() => WarningLogsEntity, (warninglogs) => warninglogs.device)
+  warningLogs: WarningLogsEntity[];
+  @Column({
+    type: 'enum',
+    enum: [1, 0],
+    default: 1,
+  })
+  AlarmReport: number;
 }

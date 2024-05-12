@@ -18,6 +18,7 @@ import { SimDto } from './dto/sim.dto';
 import { SignalDto } from './dto/signal.dto';
 import { HistoryDto } from './dto/history.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { WarningLogsDto } from './dto/warningLogs.dto';
 
 @Injectable()
 export class DevicesService extends MysqlBaseService<
@@ -63,6 +64,7 @@ export class DevicesService extends MysqlBaseService<
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
+      .leftJoinAndSelect('devices.warningLogs', 'warningLogs')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
@@ -105,12 +107,46 @@ export class DevicesService extends MysqlBaseService<
             ...historyLast.signal,
           }),
         } as HistoryDto;
+      } else {
+        data = {} as HistoryDto;
       }
       return plainToClass(
         DevicesDto,
         {
           ...device,
           ...data,
+          history: device.history
+            .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+            .map((item) => {
+              return plainToClass(
+                HistoryDto,
+                {
+                  ...device,
+                  sensors: plainToInstance(SensorsDto, item.sensors, {
+                    excludeExtraneousValues: true,
+                  }),
+                  battery: plainToInstance(BatteryDto, item.battery, {
+                    excludeExtraneousValues: true,
+                  }),
+                  sim: plainToInstance(SimDto, item.sim, {
+                    excludeExtraneousValues: true,
+                  }),
+                  signal: plainToInstance(SignalDto, {
+                    ...item.signal,
+                  }),
+                },
+                {
+                  excludeExtraneousValues: true,
+                },
+              );
+            }),
+          warningLogs: device.warningLogs
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map((item) => {
+              return plainToClass(WarningLogsDto, item, {
+                excludeExtraneousValues: true,
+              });
+            }),
           customer: device.customers.length
             ? device.customers.map((customer) => {
                 return plainToInstance(
@@ -125,7 +161,7 @@ export class DevicesService extends MysqlBaseService<
               })
             : null,
 
-          active: device.customers === null ? false : true,
+          active: device.customers.length ? true : false,
         },
         { excludeExtraneousValues: true },
       );

@@ -22,6 +22,10 @@ import { DevicesService } from 'src/devices/devices.service';
 import { JwtService } from '@nestjs/jwt';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { Notifications } from 'src/notification/entities/notification.entity';
+import { NotificationToken } from 'src/notification/entities/notification-token.entity';
+import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -38,6 +42,9 @@ import { Message } from 'src/message/message.entity';
       HistoryEntity,
       CoapClientIpAddressEntity,
       ClientSocketEntity,
+      Notifications,
+      NotificationToken,
+      WarningLogsEntity,
     ]),
   ],
   controllers: [UsersController],
@@ -52,6 +59,7 @@ import { Message } from 'src/message/message.entity';
     DevicesService,
     JwtService,
     MessageService,
+    NotificationService,
   ],
   exports: [UsersService],
 })

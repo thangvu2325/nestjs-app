@@ -31,7 +31,9 @@ export class ChatGateway
     @InjectRepository(DevicesEntity)
     private readonly deviceRepository: Repository<DevicesEntity>,
     private readonly messageService: MessageService,
-  ) {}
+  ) {
+    this.clientSocketRepository.clear();
+  }
 
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer() io: Server;

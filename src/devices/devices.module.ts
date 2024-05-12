@@ -24,6 +24,10 @@ import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
+import { Notifications } from 'src/notification/entities/notification.entity';
+import { NotificationToken } from 'src/notification/entities/notification-token.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { WarningLogsEntity } from './entities/warningLogs.entity';
 
 @Module({
   imports: [
@@ -40,6 +44,9 @@ import { Message } from 'src/message/message.entity';
       HistoryEntity,
       CoapClientIpAddressEntity,
       ClientSocketEntity,
+      Notifications,
+      NotificationToken,
+      WarningLogsEntity,
     ]),
   ],
   controllers: [DevicesController, HistoryController],
@@ -58,7 +65,8 @@ import { Message } from 'src/message/message.entity';
     DevicesService,
     Logger,
     MessageService,
+    NotificationService,
   ],
-  exports: [DevicesService],
+  exports: [DevicesService, HistoryService],
 })
 export class DevicesModule {}
