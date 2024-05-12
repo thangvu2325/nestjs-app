@@ -264,7 +264,6 @@ export class CoapService {
                 .getOne();
               if (!deviceFound) {
                 // Device not found
-                res.end(`Device not found with id: ${device.deviceId}`);
                 this.logger.log(`Device not found with id: ${device.deviceId}`);
                 break;
               }
@@ -335,11 +334,9 @@ export class CoapService {
                   }),
                 );
                 res.code = '2.05';
-                res.end(``);
                 break;
               } catch (error) {
                 console.error(error);
-                res.end(`Update device thất bại: ${error.message}`);
                 break;
               }
 
@@ -347,7 +344,6 @@ export class CoapService {
               const deviceId = queryParams.get('deviceId');
               if (deviceId === null) {
                 res.code = '4.04';
-                res.end('deviceId không tồn tại');
                 break;
               }
               const deviceGet = await this.devicesReposity.findOne({
@@ -360,7 +356,7 @@ export class CoapService {
               }
               res.code = '2.05';
               res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
-
+              break;
             case 'PUT':
               res.end(`Update device thất bại: `);
 
