@@ -475,6 +475,8 @@ export class CoapService {
     if (!deviceCoapClient) {
     } else {
       await CoapClient.tryToConnect(deviceCoapClient.ip).then((result) => {
+        console.log('result: ', result);
+        console.log('ip: ', deviceCoapClient.ip);
         if (result === true) {
           CoapClient.request(
             deviceCoapClient.ip,
@@ -497,38 +499,5 @@ export class CoapService {
         }
       });
     }
-  }
-  async test() {
-    await CoapClient.tryToConnect('coap://localhost:12345').then((result) => {
-      console.log(result);
-      if (result === true) {
-        CoapClient.observe(
-          'coap://localhost:12345/device',
-          'get',
-          (response) => {
-            console.log(response.payload.toString());
-          },
-        )
-          .then(() => {
-            console.log('Successfully started observing');
-          })
-          .catch((error) => {
-            console.log(`Failed to start observing with error: ${error}`);
-          });
-        // CoapClient.request('coap://localhost:12345', 'get', Buffer.from(''), {
-        //   keepAlive: false,
-        //   confirmable: false,
-        //   retransmit: true,
-        // })
-        //   .then((response) => {
-        //     this.logger.log('Response:', response.payload.toString());
-        //   })
-        //   .catch((err) => {
-        //     console.error('Error:', err);
-        //   });
-      } else {
-        this.logger.warn('Thiết bị này hiện không kết nối');
-      }
-    });
   }
 }
