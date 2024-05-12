@@ -144,10 +144,6 @@ export class CoapService {
             });
 
             warningUser.status = 'running';
-            await this.sendRequestToClient(
-              device.deviceId,
-              JSON.stringify({ AlarmReport: 0 }),
-            );
             AlarmTimeout = setTimeout(
               checkAlarmStatus,
               Number(process.env.WARNING_CYCLE),
@@ -194,7 +190,6 @@ export class CoapService {
       req.on('data', (data) => {
         payload += data;
       });
-      console.log(3);
       if (requestUrl.pathname === '/.well-known/core') {
         const resourceDescriptions =
           '</test>;ct=0,</device>;ct=0,</alarm>;ct=0';
@@ -398,23 +393,11 @@ export class CoapService {
               }
 
             case 'GET':
-              console.log(2);
-              if (req.headers['Observe'] !== 0)
-                return res.end('Hello ' + req.url.split('/')[1] + '\\n');
-
-              // Tạo một observer
-              const interval = setInterval(() => {
-                console.log(1);
-                res.write(JSON.stringify(this.data));
-              }, Number(process.env.WARNING_CYCLE));
-
-              // Khi kết thúc, hủy bỏ observer
-              res.on('finish', () => clearInterval(interval));
-              // ObserveReadStream();
+              console.log('mày mới gửi cc gì đó với get');
+              res.end(JSON.stringify(this.data));
               break;
 
             case 'PUT':
-              console.log(1);
               res.end(`Update device thất bại: `);
 
               break;
@@ -475,8 +458,6 @@ export class CoapService {
     if (!deviceCoapClient) {
     } else {
       await CoapClient.tryToConnect(deviceCoapClient.ip).then((result) => {
-        console.log('result: ', result);
-        console.log('ip: ', deviceCoapClient.ip);
         if (result === true) {
           CoapClient.request(
             deviceCoapClient.ip,
