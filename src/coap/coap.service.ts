@@ -208,6 +208,7 @@ export class CoapService {
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
           this.logger.log(payload);
+          console.log(req.method);
           switch (req.method) {
             case 'POST':
               if (!isJSON(payload)) {
@@ -344,17 +345,21 @@ export class CoapService {
 
             case 'GET':
               const deviceId = queryParams.get('deviceId');
+              if (deviceId === null) {
+                res.code = '4.04';
+                res.end('deviceId không tồn tại');
+                break;
+              }
               const deviceGet = await this.devicesReposity.findOne({
                 where: { deviceId },
               });
               if (!deviceGet) {
                 res.code = '4.04';
                 res.end('deviceId không tồn tại');
+                break;
               }
               res.code = '2.05';
-              console.log('mày mới gửi cc gì đó với get');
               res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
-              break;
 
             case 'PUT':
               res.end(`Update device thất bại: `);
