@@ -13,7 +13,7 @@ export class DevicesController {
   }> {
     return this.devicessService.findAll({});
   }
-  @UseGuards(JwtGuard)
+  // @UseGuards(JwtGuard)
   @Get('/customers/:customer_id')
   getAllDeviceforUser(@Param() data: { customer_id: string }): Promise<{
     devices: Array<DevicesDto>;
