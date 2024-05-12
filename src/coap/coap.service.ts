@@ -2,7 +2,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
-import { createServer, request } from 'coap';
+import {
+  ObserveReadStream,
+  ObserveWriteStream,
+  createServer,
+  request,
+} from 'coap';
 import { ChatGateway } from 'src/chat/chat.gateway';
 // import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -32,6 +37,7 @@ import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 @Injectable()
 export class CoapService {
   private server: any;
+  private observerRead: any;
   constructor(
     @InjectRepository(DevicesEntity)
     private readonly devicesReposity: Repository<DevicesEntity>,
@@ -64,6 +70,7 @@ export class CoapService {
         return 'abc';
       },
     });
+    // this.observerRead = new ObserveReadStream();
   }
   sendWarningUserList = [] as Array<{
     deviceId: string;
@@ -260,14 +267,16 @@ export class CoapService {
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
           this.logger.log(payload);
-          if (!isJSON(payload)) {
-            this.logger.error('Dữ liệu không hợp lệ');
-            res.end('Dữ liệu không hợp lệ');
-            return;
-          }
-
+          setInterval(() => {
+            this.data.AlarmReport = this.data.AlarmReport === 1 ? 0 : 1;
+          }, 2000);
           switch (req.method) {
             case 'POST':
+              if (!isJSON(payload)) {
+                this.logger.error('Dữ liệu không hợp lệ');
+                res.end('Dữ liệu không hợp lệ');
+                return;
+              }
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
               if (!isArray(data)) {
                 break;
@@ -299,6 +308,7 @@ export class CoapService {
                   }
                 });
               }
+
               const deviceFound = await this.devicesReposity
                 .createQueryBuilder('devices')
                 .leftJoinAndSelect('devices.history', 'history')
@@ -393,8 +403,17 @@ export class CoapService {
               }
 
             case 'GET':
-              res.end(`Update device thất bại: `);
+              if (req.headers['Observe'] !== 0)
+                return res.end('Hello ' + req.url.split('/')[1] + '\\n');
 
+              // Tạo một observer
+              const interval = setInterval(() => {
+                res.write(JSON.stringify(this.data));
+              }, Number(process.env.WARNING_CYCLE));
+
+              // Khi kết thúc, hủy bỏ observer
+              res.on('finish', () => clearInterval(interval));
+              // ObserveReadStream();
               break;
 
             case 'PUT':
@@ -414,6 +433,7 @@ export class CoapService {
     });
     // this.server.
   }
+  data = { AlarmReport: 0 };
   sendRequest() {
     // Tạo một đối tượng yêu cầu CoAP với các tùy chọn cần thiết
     this.server.listen(Number(process.env.COAP_PORT), () => {
