@@ -2,13 +2,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
-import { createServer, request, updateTiming } from 'coap';
+import { createServer, request } from 'coap';
 import { ChatGateway } from 'src/chat/chat.gateway';
 // import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { BatteryDto } from 'src/devices/dto/battery.dto';
-import { CoapClient } from 'node-coap-client';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
 import { HistoryDto } from 'src/devices/dto/history.dto';
 import { SensorsDto } from 'src/devices/dto/sensors.dto';
@@ -437,37 +436,5 @@ export class CoapService {
         `Kết nối Coap thành công với Port ${Number(process.env.COAP_PORT)}`,
       );
     });
-  }
-  async sendRequestToClient(deviceId: string, message: string) {
-    const deviceCoapClient = await this.coapClientIpAdressRepository.findOne({
-      where: {
-        deviceId,
-      },
-    });
-    if (!deviceCoapClient) {
-    } else {
-      await CoapClient.tryToConnect(deviceCoapClient.ip).then((result) => {
-        if (result === true) {
-          CoapClient.request(
-            deviceCoapClient.ip,
-            'post',
-            Buffer.from(message),
-            {
-              keepAlive: false,
-              confirmable: true,
-              retransmit: true,
-            },
-          )
-            .then((response) => {
-              this.logger.log('Response:', response.payload.toString());
-            })
-            .catch((err) => {
-              console.error('Error:', err);
-            });
-        } else {
-          this.logger.warn('Thiết bị này hiện không kết nối');
-        }
-      });
-    }
   }
 }

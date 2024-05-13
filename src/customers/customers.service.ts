@@ -133,11 +133,11 @@ export class CustomersService extends MysqlBaseService<
       throw new HttpException(`Mã bí mật không đúng`, HttpStatus.FORBIDDEN);
     }
 
-    // Gửi yêu cầu kết nối đến thiết bị
-    await this.coapService.sendRequestToClient(
-      device.deviceId,
-      'kết nối thành công',
-    );
+    // // Gửi yêu cầu kết nối đến thiết bị
+    // await this.coapService.sendRequestToClient(
+    //   device.deviceId,
+    //   'kết nối thành công',
+    // );
     if (!customer.devices) {
       customer.devices = []; // Khởi tạo mảng nếu chưa tồn tại
     }
