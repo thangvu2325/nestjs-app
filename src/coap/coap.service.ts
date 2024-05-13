@@ -237,11 +237,13 @@ export class CoapService {
           console.log(req.method);
           switch (req.method) {
             case 'POST':
+              res.end('update thiet bi thanh cong');
               if (!isJSON(payload)) {
                 this.logger.error('Dữ liệu không hợp lệ');
                 res.end('Dữ liệu không hợp lệ');
                 return;
               }
+              console.log('m dang gui cc gi day');
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
               if (!isArray(data)) {
                 break;
@@ -361,7 +363,7 @@ export class CoapService {
                 );
                 res.code = '2.05';
                 console.log(1);
-                res.end('update thiet bi thanh cong');
+
                 break;
               } catch (error) {
                 console.error(error);
