@@ -46,37 +46,35 @@ export class ChatGateway
     const token = client.handshake.auth.token;
     const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
-    this.logger.log(`Client id: ${client.id} connected`);
-    this.logger.debug(`Number of connected clients: ${sockets.size}`);
     client.setMaxListeners(20);
-    // if (!token || !userId) {
-    //   client.disconnect();
-    //   return;
-    // }
-    // try {
-    //   const decodedToken = await this.jwtService.verifyAsync(token, {
-    //     secret: process.env.jwtSecretKey,
-    //   });
-    //   if (!decodedToken) {
-    //     client.disconnect();
-    //     return;
-    //   }
-    //   const user = await this.userRepository.findOne({ where: { id: userId } });
-    //   if (!user) {
-    //     this.logger.log(`User not found`);
-    //     client.disconnect();
-    //     return;
-    //   }
-    //   await this.clientSocketRepository.save({
-    //     clientId: client.id,
-    //     userId: userId,
-    //   });
-    //   this.logger.log(`Client id: ${client.id} connected`);
-    //   this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    // } catch (error) {
-    //   this.logger.error(`Error during connection: ${error.message}`);
-    //   client.disconnect();
-    // }
+    if (!token || !userId) {
+      client.disconnect();
+      return;
+    }
+    try {
+      const decodedToken = await this.jwtService.verifyAsync(token, {
+        secret: process.env.jwtSecretKey,
+      });
+      if (!decodedToken) {
+        client.disconnect();
+        return;
+      }
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        this.logger.log(`User not found`);
+        client.disconnect();
+        return;
+      }
+      await this.clientSocketRepository.save({
+        clientId: client.id,
+        userId: userId,
+      });
+      this.logger.log(`Client id: ${client.id} connected`);
+      this.logger.debug(`Number of connected clients: ${sockets.size}`);
+    } catch (error) {
+      this.logger.error(`Error during connection: ${error.message}`);
+      client.disconnect();
+    }
   }
 
   async getUserIdListbyDeviceId(deviceId: string): Promise<Array<string>> {

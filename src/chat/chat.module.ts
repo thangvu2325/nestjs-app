@@ -35,5 +35,6 @@ import { Message } from 'src/message/message.entity';
   ],
   controllers: [],
   providers: [DevicesService, ChatGateway, MessageService],
+  exports: [ChatGateway],
 })
 export class ChatModule {}

@@ -16,7 +16,6 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { CoapService } from 'src/coap/coap.service';
-import { ChatGateway } from 'src/chat/chat.gateway';
 import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 import { CustomersService } from 'src/customers/customers.service';
 import { LoggerService } from 'src/logger/logger.service';
@@ -28,6 +27,7 @@ import { Notifications } from 'src/notification/entities/notification.entity';
 import { NotificationToken } from 'src/notification/entities/notification-token.entity';
 import { NotificationService } from 'src/notification/notification.service';
 import { WarningLogsEntity } from './entities/warningLogs.entity';
+import { ChatModule } from 'src/chat/chat.module';
 
 @Module({
   imports: [
@@ -48,16 +48,15 @@ import { WarningLogsEntity } from './entities/warningLogs.entity';
       NotificationToken,
       WarningLogsEntity,
     ]),
+    ChatModule,
   ],
   controllers: [DevicesController, HistoryController],
   providers: [
     DevicesService,
     JwtService,
     HistoryService,
-    CoapService,
     DevicesService,
     CoapService,
-    ChatGateway,
     CustomersService,
     LoggerService,
     MailService,

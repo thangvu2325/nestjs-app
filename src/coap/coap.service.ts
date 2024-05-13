@@ -28,6 +28,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { UsersDto } from 'src/users/users.dto';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
+import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class CoapService {
   private server: any;
@@ -57,6 +58,7 @@ export class CoapService {
     private readonly chatGateWay: ChatGateway,
     private readonly logger: Logger,
     private readonly notificationService: NotificationService,
+    private readonly mailService: MailService,
   ) {
     this.coapClientIpAdressRepository.clear();
     this.server = createServer({
@@ -129,12 +131,12 @@ export class CoapService {
                 const userDto = plainToInstance(UsersDto, userFound, {
                   excludeExtraneousValues: true,
                 });
-                // await this.mailService.sendEmailWarning(customer.email);
-                // await this.notificationService.sendPush(
-                //   userDto,
-                //   'Cảnh báo cháy',
-                //   `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
-                // );
+                await this.mailService.sendEmailWarning(customer.email);
+                await this.notificationService.sendPush(
+                  userDto,
+                  'Cảnh báo cháy',
+                  `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
+                );
               } catch (error) {
                 this.logger.warn(error.message);
               }
@@ -384,8 +386,8 @@ export class CoapService {
                 break;
               }
               res.code = '2.05';
-              res.type = 'ACK';
-              res.end(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
+              res.write(JSON.stringify({ AlarmReport: deviceGet.AlarmReport }));
+              res.end('');
               break;
             case 'PUT':
               res.end(`Update device thất bại: `);

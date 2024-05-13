@@ -12,7 +12,6 @@ import { SimEntity } from 'src/devices/entities/sim.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { HistoryEntity } from 'src/devices/entities/history.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
-import { ChatGateway } from 'src/chat/chat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
@@ -26,6 +25,7 @@ import { NotificationToken } from 'src/notification/entities/notification-token.
 import { Notifications } from 'src/notification/entities/notification.entity';
 import { UsersService } from 'src/users/users.service';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
+import { ChatModule } from 'src/chat/chat.module';
 
 @Module({
   imports: [
@@ -47,12 +47,12 @@ import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
       CoapClientIpAddressEntity,
       WarningLogsEntity,
     ]),
+    ChatModule,
   ],
   controllers: [CoapController],
   providers: [
     CoapService,
     DevicesService,
-    ChatGateway,
     Logger,
     MessageService,
     MailService,
