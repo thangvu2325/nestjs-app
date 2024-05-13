@@ -63,13 +63,6 @@ export class CoapService {
     this.server = createServer({
       sendAcksForNonConfirmablePackets: true,
     });
-    updateTiming({
-      ackTimeout: 0.25,
-      ackRandomFactor: 1.0,
-      maxRetransmit: 0,
-      maxLatency: 2,
-      piggybackReplyMs: 10,
-    });
     // this.observerRead = new ObserveReadStream();
   }
   sendWarningUserList = [] as Array<{
@@ -138,11 +131,11 @@ export class CoapService {
                   excludeExtraneousValues: true,
                 });
                 // await this.mailService.sendEmailWarning(customer.email);
-                await this.notificationService.sendPush(
-                  userDto,
-                  'Cảnh báo cháy',
-                  `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
-                );
+                // await this.notificationService.sendPush(
+                //   userDto,
+                //   'Cảnh báo cháy',
+                //   `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
+                // );
               } catch (error) {
                 this.logger.warn(error.message);
               }
