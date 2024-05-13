@@ -290,6 +290,7 @@ export class CoapService {
               if (!deviceFound) {
                 // Device not found
                 this.logger.log(`Device not found with id: ${device.deviceId}`);
+                res.end(`Device not found with id: ${device.deviceId}`);
                 break;
               }
               const coapClientFound =
