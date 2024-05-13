@@ -359,6 +359,7 @@ export class CoapService {
                   }),
                 );
                 res.code = '2.05';
+                console.log(1);
                 res.end('update thiet bi thanh cong');
                 break;
               } catch (error) {
