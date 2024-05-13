@@ -236,7 +236,6 @@ export class CoapService {
           console.log(req.method);
           switch (req.method) {
             case 'POST':
-              res.end('update thiet bi thanh cong');
               if (!isJSON(payload)) {
                 this.logger.error('Dữ liệu không hợp lệ');
                 res.end('Dữ liệu không hợp lệ');
@@ -362,7 +361,8 @@ export class CoapService {
                 );
                 res.code = '2.05';
                 console.log(1);
-
+                res.write('update thiet bi thanh cong');
+                res.end('');
                 break;
               } catch (error) {
                 console.error(error);
