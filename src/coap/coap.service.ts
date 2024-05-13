@@ -2,7 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
-import { createServer, request } from 'coap';
+import { createServer, request, updateTiming } from 'coap';
 import { ChatGateway } from 'src/chat/chat.gateway';
 // import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -62,6 +62,13 @@ export class CoapService {
     this.coapClientIpAdressRepository.clear();
     this.server = createServer({
       sendAcksForNonConfirmablePackets: true,
+    });
+    updateTiming({
+      ackTimeout: 0.25,
+      ackRandomFactor: 1.0,
+      maxRetransmit: 0,
+      maxLatency: 2,
+      piggybackReplyMs: 10,
     });
     // this.observerRead = new ObserveReadStream();
   }
@@ -239,7 +246,6 @@ export class CoapService {
             case 'POST':
               if (!isJSON(payload)) {
                 this.logger.error('Dữ liệu không hợp lệ');
-
                 res.end('Dữ liệu không hợp lệ');
                 return;
               }
@@ -360,6 +366,7 @@ export class CoapService {
                   }),
                 );
                 res.code = '2.05';
+                res.end('update thiet bi thanh cong');
                 break;
               } catch (error) {
                 console.error(error);

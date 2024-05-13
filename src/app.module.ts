@@ -30,6 +30,8 @@ import { NotificationModule } from './notification/notification.module';
 import { NotificationToken } from './notification/entities/notification-token.entity';
 import { Notifications } from './notification/entities/notification.entity';
 import { WarningLogsEntity } from './devices/entities/warningLogs.entity';
+import { RoomModule } from './room/room.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -76,6 +78,8 @@ import { WarningLogsEntity } from './devices/entities/warningLogs.entity';
     SMSModule,
     ChatModule,
     NotificationModule,
+    RoomModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [
