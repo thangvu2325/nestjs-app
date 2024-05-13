@@ -10,8 +10,6 @@ import { WarningLogsDto } from './warningLogs.dto';
 
 export class DevicesDto extends BaseDto {
   @Expose()
-  customer: CustomersDto;
-  @Expose()
   deviceId: string;
   @Expose()
   deviceName: string;
@@ -24,8 +22,6 @@ export class DevicesDto extends BaseDto {
   @Expose()
   battery: BatteryDto;
   @Expose()
-  history: HistoryDto[];
-  @Expose()
   signal: SignalDto;
   @Expose()
   sim: SimDto;
@@ -33,6 +29,4 @@ export class DevicesDto extends BaseDto {
   active: string;
   @Expose()
   AlarmReport: number;
-  @Expose()
-  warningLogs: WarningLogsDto[];
 }

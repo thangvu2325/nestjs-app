@@ -428,6 +428,7 @@ export class CoapService {
         // Xử lý lỗi nếu có
         console.error('Request error:', err.message);
       });
+
       req.end(
         `Kết nối Coap thành công với Port ${Number(process.env.COAP_PORT)}`,
       );

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
-import { plainToClass, plainToInstance } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { DevicesEntity } from './entities/devices.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 import { SensorsEntity } from './entities/sensors.entity';
@@ -15,6 +15,7 @@ import { SimDto } from './dto/sim.dto';
 import { SignalDto } from './dto/signal.dto';
 import { HistoryEntity } from './entities/history.entity';
 import { HistoryDto } from './dto/history.dto';
+import { DevicesDto } from './dto/devices.dto';
 
 @Injectable()
 export class HistoryService extends MysqlBaseService<
@@ -40,59 +41,70 @@ export class HistoryService extends MysqlBaseService<
     super(historyRepository, HistoryDto);
   }
 
-  async findOneByDeviceId(
-    query,
-    deviceId: string,
+  async Get(
+    deviceId?: string,
+    customer_id?: string,
   ): Promise<{ historyList: Array<HistoryDto>; historyCount: number }> {
-    const DeviceFound = await this.deviceRepository
-      .createQueryBuilder('devices')
-      .leftJoinAndSelect('devices.history', 'history')
-      .leftJoinAndSelect('devices.customer', 'customers')
-      .where('devices.deviceId = :deviceId', { deviceId })
-      .getOne();
-    if (!DeviceFound) {
-      throw 'Không tìm thấy thiết bị';
-    }
-    const qb = this.historyRepository
+    const qb = await this.historyRepository
       .createQueryBuilder('history')
+      .leftJoinAndSelect('history.device', 'devices')
+      .leftJoinAndSelect('devices.customers', 'customers')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
-      .where('history.deviceId = :deviceId', { deviceId: DeviceFound.id });
-    if ('limit' in query) {
-      qb.limit(query.limit);
-    }
+      .leftJoinAndSelect('history.sim', 'sim');
 
-    if ('offset' in query) {
-      qb.offset(query.offset);
-    }
+    // Execute the query and count
     const historyList = await qb.getMany();
-    const historyCount = await qb.getCount();
-    const historyDtoArray = historyList.map((device) => {
-      return plainToClass(
-        HistoryDto,
-        {
-          ...device,
-          sensors: plainToInstance(SensorsDto, device.sensors, {
-            excludeExtraneousValues: true,
-          }),
-          battery: plainToInstance(BatteryDto, device.battery, {
-            excludeExtraneousValues: true,
-          }),
-          sim: plainToInstance(SimDto, device.sim, {
-            excludeExtraneousValues: true,
-          }),
-          signal: plainToInstance(SignalDto, {
-            ...device.signal,
-          }),
-        },
-        {
-          excludeExtraneousValues: true,
-        },
-      );
-    });
 
-    return { historyList: historyDtoArray, historyCount: historyCount };
+    // Map to DTOs
+    const historyDtoArray = historyList
+      .filter((history) => {
+        const isDevice = deviceId
+          ? history.device?.deviceId === deviceId
+          : true;
+        const isCustomerId = customer_id
+          ? history.device?.customers.some(
+              (customer) => customer?.customer_id === customer_id,
+            )
+          : true;
+        return isDevice && isCustomerId;
+      })
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((history) => {
+        return {
+          ...plainToInstance(
+            HistoryDto,
+            {
+              ...history,
+              sensors: plainToInstance(SensorsDto, history.sensors, {
+                excludeExtraneousValues: true,
+              }),
+              battery: plainToInstance(BatteryDto, history.battery, {
+                excludeExtraneousValues: true,
+              }),
+              sim: plainToInstance(SimDto, history.sim, {
+                excludeExtraneousValues: true,
+              }),
+              signal: plainToInstance(SignalDto, {
+                ...history.signal,
+              }),
+            },
+            {
+              excludeExtraneousValues: true,
+            },
+          ),
+
+          device: plainToInstance(DevicesDto, history.device, {
+            excludeExtraneousValues: true,
+          }),
+        };
+      });
+
+    // Return results
+    return {
+      historyList: historyDtoArray,
+      historyCount: historyDtoArray.length,
+    };
   }
 }

@@ -1,25 +1,29 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { DevicesDto } from './dto/devices.dto';
 import { DevicesService } from './devices.service';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { HistoryService } from './history.service';
 
 @Controller('devices')
 export class DevicesController {
-  constructor(private readonly devicessService: DevicesService) {}
+  constructor(
+    private readonly devicessService: DevicesService,
+    private readonly historyService: HistoryService,
+  ) {}
   @Get()
-  getAllDevice(): Promise<{
+  getAllDevice(@Query('customer_id') customer_id: string): Promise<{
     devices: Array<DevicesDto>;
     devicesCount: number;
   }> {
-    return this.devicessService.findAll({});
-  }
-  // @UseGuards(JwtGuard)
-  @Get('/customers/:customer_id')
-  getAllDeviceforUser(@Param() data: { customer_id: string }): Promise<{
-    devices: Array<DevicesDto>;
-    devicesCount: number;
-  }> {
-    return this.devicessService.findAll({}, data.customer_id);
+    return this.devicessService.findAll({}, customer_id);
   }
   @Post('')
   createDevice(@Body() Dto: DevicesDto): Promise<{ result: string }> {

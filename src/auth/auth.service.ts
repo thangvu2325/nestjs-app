@@ -16,7 +16,7 @@ import { Repository } from 'typeorm';
 import { CustomersService } from 'src/customers/customers.service';
 import { CustomersDto } from 'src/customers/customers.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
-const EXPIRE_TIME = 20 * 1000;
+const EXPIRE_TIME = 86400000;
 
 @Injectable()
 export class AuthService {
@@ -41,7 +41,7 @@ export class AuthService {
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '20s',
+      expiresIn: '1d',
       secret: process.env.jwtSecretKey,
     });
 
@@ -159,7 +159,7 @@ export class AuthService {
       excludeExtraneousValues: true,
     });
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '20s',
+      expiresIn: '1d',
       secret: process.env.jwtSecretKey,
     });
     const refreshToken = await this.jwtService.signAsync(payload, {
