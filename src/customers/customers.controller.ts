@@ -67,7 +67,7 @@ export class CustomersController {
       params.deviceId,
     );
   }
-  @UseGuards(JwtGuard)
+  //@UseGuards(JwtGuard)
   @Post('/device/:customer_id/:deviceId')
   toggleAlarmStatus(
     @Param('customer_id') customer_id: string,
