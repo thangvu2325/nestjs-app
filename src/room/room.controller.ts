@@ -8,33 +8,30 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomService } from './room.service';
 import { GetRoomsDto } from './dto/get-rooms.dto';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
-import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('rooms')
-@UseGuards(JwtGuard)
+// @UseGuards(JwtGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
   @Get()
-  getRooms(getRoomsDto: GetRoomsDto) {
-    return this.roomService.getRooms(getRoomsDto);
+  getRooms(_getRoomsDto: GetRoomsDto) {
+    console.log(_getRoomsDto);
+    return this.roomService.getRooms({ skip: 0, take: 10 });
   }
-
-  @Get(':id')
-  getRoom(@Param('id', ParseIntPipe) id: number) {
-    return this.roomService.getRoom(id);
-  }
-
   @Get('search')
   searchRooms(@Query() searchRoomsDto: SearchRoomsDto) {
     return this.roomService.searchRooms(searchRoomsDto);
+  }
+  @Get(':id')
+  getRoom(@Param('id') id: string) {
+    return this.roomService.getRoom(id);
   }
 
   @Post()
@@ -48,7 +45,7 @@ export class RoomController {
   @Put(':id')
   updateRoom(
     @Body() data: { userId: string },
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: string,
     @Body() updateRoomDto: UpdateRoomDto,
   ) {
     return this.roomService.updateRoom(id, updateRoomDto, data.userId);
@@ -56,8 +53,8 @@ export class RoomController {
 
   @Delete(':id')
   deleteRoom(
-    @Body() data: { userId: number },
-    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { userId: string },
+    @Param('id', ParseIntPipe) id: string,
   ) {
     return this.roomService.deleteRoom(id);
   }

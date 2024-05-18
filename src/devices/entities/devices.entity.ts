@@ -1,9 +1,18 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+} from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
 
 import { HistoryEntity } from './history.entity';
 import { WarningLogsEntity } from './warningLogs.entity';
+import { Room } from 'src/room/room.entity';
 
 @Entity({
   name: 'devices',
@@ -28,4 +37,7 @@ export class DevicesEntity extends BaseEntity {
     default: 1,
   })
   AlarmReport: number;
+  @OneToOne(() => Room)
+  @JoinColumn()
+  room: Room;
 }

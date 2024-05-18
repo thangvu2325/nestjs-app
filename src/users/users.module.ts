@@ -26,6 +26,7 @@ import { Notifications } from 'src/notification/entities/notification.entity';
 import { NotificationToken } from 'src/notification/entities/notification-token.entity';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
+import { Room } from 'src/room/room.entity';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ChatModule } from 'src/chat/chat.module';
       Notifications,
       NotificationToken,
       WarningLogsEntity,
+      Room,
     ]),
     ChatModule,
   ],

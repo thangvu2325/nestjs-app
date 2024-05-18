@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -28,5 +29,12 @@ export class DevicesController {
   @Post('')
   createDevice(@Body() Dto: DevicesDto): Promise<{ result: string }> {
     return this.devicessService.saveDevice(Dto);
+  }
+  @Put(':deviceId/:roomId')
+  updateDevice(
+    @Param('deviceId') deviceId: string,
+    @Param('roomId') roomId: string,
+  ): Promise<{ result: string }> {
+    return this.devicessService.updateDevice(roomId, deviceId);
   }
 }

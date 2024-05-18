@@ -10,7 +10,6 @@ import { SensorsEntity } from './entities/sensors.entity';
 import { SignalEntity } from './entities/signal.entity';
 import { BatteryEntity } from './entities/battery.entity';
 import { SimEntity } from './entities/sim.entity';
-import { CustomersDto } from 'src/customers/customers.dto';
 import * as bcrypt from 'bcrypt';
 import { SensorsDto } from './dto/sensors.dto';
 import { BatteryDto } from './dto/battery.dto';
@@ -18,6 +17,7 @@ import { SimDto } from './dto/sim.dto';
 import { SignalDto } from './dto/signal.dto';
 import { HistoryDto } from './dto/history.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { Room } from 'src/room/room.entity';
 
 @Injectable()
 export class DevicesService extends MysqlBaseService<
@@ -39,6 +39,8 @@ export class DevicesService extends MysqlBaseService<
     private readonly batteryReposity: Repository<BatteryEntity>,
     @InjectRepository(SimEntity)
     private readonly simReposity: Repository<SimEntity>,
+    @InjectRepository(Room)
+    private readonly roomReposity: Repository<Room>,
   ) {
     super(devicesReposity, DevicesDto);
   }
@@ -63,6 +65,7 @@ export class DevicesService extends MysqlBaseService<
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
+      .leftJoinAndSelect('devices.room', 'room')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
@@ -113,6 +116,7 @@ export class DevicesService extends MysqlBaseService<
         {
           ...device,
           ...data,
+          roomId: device?.room?.id ?? null,
           active: device.customers.length ? true : false,
         },
         { excludeExtraneousValues: true },
@@ -124,17 +128,47 @@ export class DevicesService extends MysqlBaseService<
 
   async saveDevice(Dto: DevicesDto): Promise<{ result: string }> {
     try {
-      await this.devicesReposity.save({
+      // Generate secret key and device ID
+      const secretKey = bcrypt.genSaltSync(10);
+      const deviceId = `device_${this.generateUniqueId()}`;
+
+      // Save device with generated keys
+      const devices = await this.devicesReposity.save({
         ...Dto,
-        secretKey: bcrypt.genSaltSync(10),
-        deviceId: `device_${this.generateUniqueId()}`,
+        secretKey,
+        deviceId,
       });
+
+      // Save room associated with the device
+      const room = await this.roomReposity.save({
+        title: `Room của thiết bị ${devices.deviceId}`,
+        description: `Room này để nhận dữ liệu`,
+        type: `message-device`,
+      });
+
+      // Associate room with the device and update the device entry
+      devices.room = room;
+      await this.devicesReposity.save(devices);
 
       return { result: 'thành công' };
     } catch (error) {
-      // Handle errors gracefully
       console.error('Error occurred while saving device:', error);
       throw new Error('Failed to save device');
     }
+  }
+  async updateDevice(id: string, deviceId: string) {
+    const roomFound = await this.roomReposity.findOne({
+      where: {
+        id,
+      },
+    });
+    const deviceFound = await this.devicesReposity.findOne({
+      where: { deviceId },
+      relations: ['room'],
+    });
+    deviceFound.room = roomFound;
+
+    await this.devicesReposity.save(deviceFound);
+    return { result: 'thành công' };
   }
 }

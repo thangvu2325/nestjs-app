@@ -19,4 +19,6 @@ export class UsersDto extends BaseDto {
   role: string;
   @Expose()
   customer_id: string;
+  @Expose()
+  room_id: string;
 }

@@ -26,6 +26,7 @@ import { Notifications } from 'src/notification/entities/notification.entity';
 import { UsersService } from 'src/users/users.service';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
+import { Room } from 'src/room/room.entity';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ChatModule } from 'src/chat/chat.module';
       UserEntity,
       CoapClientIpAddressEntity,
       WarningLogsEntity,
+      Room,
     ]),
     ChatModule,
   ],

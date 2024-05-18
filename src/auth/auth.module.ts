@@ -29,6 +29,7 @@ import { NotificationToken } from 'src/notification/entities/notification-token.
 import { NotificationService } from 'src/notification/notification.service';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
+import { Room } from 'src/room/room.entity';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ChatModule } from 'src/chat/chat.module';
       Notifications,
       NotificationToken,
       WarningLogsEntity,
+      Room,
     ]), // Add DevicesEntity here
     CustomersModule,
     RedisModule,

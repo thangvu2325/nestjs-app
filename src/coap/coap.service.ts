@@ -2,7 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isArray, isJSON } from 'class-validator';
-import { createServer, request } from 'coap';
+import { createServer, request, updateTiming } from 'coap';
 import { ChatGateway } from 'src/chat/chat.gateway';
 // import { ChatGateway } from 'src/chat/chat.gateway';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -32,6 +32,7 @@ import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class CoapService {
   private server: any;
+  private PREVENT_CRASH = true;
   private observerRead: any;
   constructor(
     @InjectRepository(DevicesEntity)
@@ -61,10 +62,14 @@ export class CoapService {
     private readonly mailService: MailService,
   ) {
     this.coapClientIpAdressRepository.clear();
-    this.server = createServer({
-      sendAcksForNonConfirmablePackets: true,
+    updateTiming({
+      ackTimeout: 0.2,
+      ackRandomFactor: 1.0,
+      maxRetransmit: 4,
+      maxLatency: 0.3,
+      piggybackReplyMs: 10,
     });
-    // this.observerRead = new ObserveReadStream();
+    this.server = createServer();
   }
   sendWarningUserList = [] as Array<{
     deviceId: string;
@@ -352,17 +357,28 @@ export class CoapService {
                   await this.devicesReposity.save(deviceFound);
                 }
 
-                await this.chatGateWay.sendDeviceDataToClient(
+                await this.chatGateWay.sendDeviceDataToRoom(
                   device.deviceId,
                   JSON.stringify({
-                    ...historyDevice,
-                    deviceId: device.deviceId,
-                    updatedAt: new Date(),
-                    // warningLogs:
+                    type: 'device',
+                    message: {
+                      deviceId: device?.deviceId,
+                      ...deviceFound?.history?.sort(
+                        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+                      )[0],
+                    },
                   }),
                 );
+                // await this.chatGateWay.sendDeviceDataToClient(
+                //   device.deviceId,
+                //   JSON.stringify({
+                //     ...historyDevice,
+                //     deviceId: device.deviceId,
+                //     updatedAt: new Date(),
+                //     // warningLogs:
+                //   }),
+                // );
                 res.code = '2.05';
-                console.log(1);
                 res.write('update thiet bi thanh cong');
                 res.end('');
                 break;

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 
 import { HistoryService } from './history.service';
 import { HistoryDto } from './dto/history.dto';
@@ -8,7 +8,6 @@ export class HistoryController {
   constructor(private readonly historyService: HistoryService) {}
   @Get()
   getAllDevice(
-    @Param('deviceId') deviceId: string,
     @Query()
     query: {
       customer_id?: string;

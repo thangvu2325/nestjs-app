@@ -40,7 +40,8 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
   ): Promise<{ users: Array<UsersDto>; usersCount: number }> {
     const qb = await this.userReposity
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.customer', 'customers');
+      .leftJoinAndSelect('user.customer', 'customers')
+      .leftJoinAndSelect('user.rooms', 'rooms');
 
     qb.where('1 = 1');
 
@@ -65,11 +66,16 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
               excludeExtraneousValues: true,
             })
           : null;
+        const roomNewest = user.rooms
+          .filter((room) => room?.status === 'incomplete')
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+
         return plainToClass(
           UsersDto,
           {
             ...user,
             customer,
+            room_id: roomNewest ? roomNewest.id : null,
           },
           { excludeExtraneousValues: true },
         );
@@ -82,6 +88,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
       .createQueryBuilder('user')
       .where('user.email = :email', { email })
       .leftJoinAndSelect('user.customer', 'customers')
+      .leftJoinAndSelect('user.rooms', 'rooms')
       .getOne();
 
     return user || null;

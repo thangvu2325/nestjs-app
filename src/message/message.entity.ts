@@ -1,19 +1,11 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
 
 import { Room } from '../room/room.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { BaseEntity } from 'src/common/mysql/base.entity';
 
-@Entity()
-export class Message {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+@Entity('message')
+export class Message extends BaseEntity {
   @Column()
   content: string;
 
@@ -22,7 +14,4 @@ export class Message {
 
   @ManyToOne(() => UserEntity, (user) => user.messages)
   owner: UserEntity;
-
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
 }

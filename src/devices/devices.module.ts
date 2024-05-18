@@ -28,6 +28,9 @@ import { NotificationToken } from 'src/notification/entities/notification-token.
 import { NotificationService } from 'src/notification/notification.service';
 import { WarningLogsEntity } from './entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
+import { Room } from 'src/room/room.entity';
+import { WarningLogsService } from './warningLogs.service';
+import { WarningLogsController } from './warningLogs.controller';
 
 @Module({
   imports: [
@@ -47,10 +50,11 @@ import { ChatModule } from 'src/chat/chat.module';
       Notifications,
       NotificationToken,
       WarningLogsEntity,
+      Room,
     ]),
     ChatModule,
   ],
-  controllers: [DevicesController, HistoryController],
+  controllers: [DevicesController, HistoryController, WarningLogsController],
   providers: [
     DevicesService,
     JwtService,
@@ -65,7 +69,8 @@ import { ChatModule } from 'src/chat/chat.module';
     Logger,
     MessageService,
     NotificationService,
+    WarningLogsService,
   ],
-  exports: [DevicesService, HistoryService],
+  exports: [DevicesService, HistoryService, WarningLogsService],
 })
 export class DevicesModule {}

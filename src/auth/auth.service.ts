@@ -51,12 +51,16 @@ export class AuthService {
     });
     // Lưu Refresh Token vào Redis
     await this.redisTokenService.saveRefreshToken(user.id, refreshToken);
+    const roomNewest = user.rooms
+      .filter((room) => room?.status === 'incomplete')
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
     return {
       user: plainToClass(
         UsersDto,
         {
           customer_id: customer?.customer_id ?? '',
           ...user,
+          room_id: roomNewest ? roomNewest.id : null,
         },
         { excludeExtraneousValues: true },
       ),

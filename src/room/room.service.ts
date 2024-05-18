@@ -7,6 +7,8 @@ import { GetRoomsDto } from './dto/get-rooms.dto';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { Room } from './room.entity';
+import { plainToInstance } from 'class-transformer';
+import { UsersDto } from 'src/users/users.dto';
 
 @Injectable()
 export class RoomService {
@@ -15,16 +17,39 @@ export class RoomService {
     private readonly roomRepository: Repository<Room>,
   ) {}
 
-  getRooms(getRoomsDto: GetRoomsDto) {
-    return this.roomRepository.find({
-      skip: getRoomsDto.skip,
-      take: getRoomsDto.take,
+  async getRooms(getRoomsDto: GetRoomsDto) {
+    const roomList = await this.roomRepository.find({
+      skip: getRoomsDto?.skip,
+      take: getRoomsDto?.take,
       order: { createdAt: 'DESC' },
+      relations: ['owner', 'message'],
+    });
+    return roomList.map((room) => {
+      return {
+        ...room,
+        owner: plainToInstance(UsersDto, room.owner, {
+          excludeExtraneousValues: true,
+        }),
+      };
     });
   }
 
-  getRoom(id: number) {
-    return this.roomRepository.findOne({ where: { id } });
+  async getRoom(id: string) {
+    const room = await this.roomRepository.findOne({
+      where: { id },
+      relations: ['owner', 'messages', 'messages.owner'],
+    });
+    return {
+      ...room,
+      owner: plainToInstance(UsersDto, room.owner, {
+        excludeExtraneousValues: true,
+      }),
+      messages: room.messages.sort((a, b) => {
+        return (
+          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+        );
+      }),
+    };
   }
 
   async searchRooms(searchRoomsDto: SearchRoomsDto) {
@@ -49,7 +74,10 @@ export class RoomService {
     return { items, count };
   }
 
-  async createRoom(createRoomDto: CreateRoomDto, userId: string) {
+  async createRoom(
+    createRoomDto: CreateRoomDto,
+    userId: string,
+  ): Promise<{ result: string }> {
     const roomPartial: DeepPartial<Room> = {
       title: createRoomDto.title,
       description: createRoomDto.description,
@@ -57,8 +85,9 @@ export class RoomService {
     };
     const room = this.roomRepository.create(roomPartial);
     await this.roomRepository.save(room);
+    return { result: 'thành công' };
   }
-  async updateRoom(id: number, updateRoomDto: UpdateRoomDto, userId: string) {
+  async updateRoom(id: string, updateRoomDto: UpdateRoomDto, userId: string) {
     const result = await this.roomRepository.update(id, {
       ...updateRoomDto,
       owner: { id: userId },
@@ -68,7 +97,7 @@ export class RoomService {
     }
   }
 
-  async deleteRoom(id: number) {
+  async deleteRoom(id: string) {
     const result = await this.roomRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Room with id ${id} not found`);

@@ -3,6 +3,6 @@ import { IsInt } from 'class-validator';
 
 export class GetMessagesDto {
   @IsInt()
-  @Type(() => Number)
-  readonly roomId: number;
+  @Type(() => String)
+  readonly roomId: string;
 }

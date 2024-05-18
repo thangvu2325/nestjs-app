@@ -39,6 +39,7 @@ import { MessageModule } from './message/message.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
+        timezone: 'Z',
         type: 'mysql',
         host: configService.get('MYSQLDB_HOST'),
         port: configService.get('MYSQLDB_LOCAL_PORT'),

@@ -9,6 +9,6 @@ export class SearchRoomsDto extends PaginationDto {
 
   @IsOptional()
   @IsInt()
-  @Type(() => Number)
-  readonly ownerId?: number;
+  @Type(() => String)
+  readonly ownerId?: string;
 }

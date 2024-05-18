@@ -46,7 +46,6 @@ export class NotificationService {
       notification_token: notification_dto.notification_token,
       status: 'ACTIVE',
     });
-    console.log(notification_token);
     return notification_token;
   };
 
