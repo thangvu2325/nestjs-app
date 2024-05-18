@@ -22,7 +22,7 @@ export class RoomService {
       skip: getRoomsDto?.skip,
       take: getRoomsDto?.take,
       order: { createdAt: 'DESC' },
-      relations: ['owner', 'message'],
+      relations: ['owner', 'messages'],
     });
     return roomList.map((room) => {
       return {
@@ -44,7 +44,7 @@ export class RoomService {
       owner: plainToInstance(UsersDto, room.owner, {
         excludeExtraneousValues: true,
       }),
-      messages: room.messages.sort((a, b) => {
+      messages: room?.messages?.sort((a, b) => {
         return (
           new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
         );
