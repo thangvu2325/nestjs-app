@@ -20,10 +20,8 @@ import { DevicesModule } from './devices/devices.module';
 import { UserEntity } from './users/entity/user.entity';
 import { SMSModule } from './sms/sms.module';
 import { HistoryEntity } from './devices/entities/history.entity';
-import { ClientSocketEntity } from './chat/clientSocket.entity';
 import { ChatModule } from './chat/chat.module';
 import { VerifyEntity } from './users/entity/verifyKey.entity';
-import { CoapClientIpAddressEntity } from './coap/coapClientIpAddress.entity';
 import { Room } from './room/room.entity';
 import { Message } from './message/message.entity';
 import { NotificationModule } from './notification/notification.module';
@@ -32,6 +30,10 @@ import { Notifications } from './notification/entities/notification.entity';
 import { WarningLogsEntity } from './devices/entities/warningLogs.entity';
 import { RoomModule } from './room/room.module';
 import { MessageModule } from './message/message.module';
+import { SecretKeyEntity } from './auth/entity/secretKey.entity';
+import { TicketModule } from './tickets/tickets.module';
+import { ticketsEntity } from './tickets/entity/tickets.entity';
+import { ticketMessageEntity } from './tickets/entity/ticket-message.entity';
 
 @Module({
   imports: [
@@ -56,19 +58,19 @@ import { MessageModule } from './message/message.module';
           SimEntity,
           SignalEntity,
           HistoryEntity,
-          ClientSocketEntity,
           VerifyEntity,
-          CoapClientIpAddressEntity,
+          ticketsEntity,
           Room,
           Message,
           NotificationToken,
           Notifications,
           WarningLogsEntity,
+          ticketMessageEntity,
+          SecretKeyEntity,
         ],
         synchronize: true,
       }),
     }),
-
     CustomersModule,
     UsersModule,
     AuthModule,
@@ -81,6 +83,7 @@ import { MessageModule } from './message/message.module';
     NotificationModule,
     RoomModule,
     MessageModule,
+    TicketModule,
   ],
   controllers: [AppController],
   providers: [

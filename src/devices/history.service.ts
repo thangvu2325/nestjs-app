@@ -41,10 +41,22 @@ export class HistoryService extends MysqlBaseService<
     super(historyRepository, HistoryDto);
   }
 
-  async Get(
-    deviceId?: string,
-    customer_id?: string,
-  ): Promise<{ historyList: Array<HistoryDto>; historyCount: number }> {
+  async Get(query: {
+    customer_id?: string;
+    deviceId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ historyList: Array<HistoryDto>; historyCount: number }> {
+    const startDate = query.startDate
+      ? new Date(query.startDate)
+      : new Date(new Date().setDate(new Date().getDate() - 10));
+    const endDate = query.endDate ? new Date(query.endDate) : new Date();
+    if (
+      (startDate && isNaN(startDate.getTime())) ||
+      (endDate && isNaN(endDate.getTime()))
+    ) {
+      throw new Error('Invalid date format');
+    }
     const qb = await this.historyRepository
       .createQueryBuilder('history')
       .leftJoinAndSelect('history.device', 'devices')
@@ -52,7 +64,11 @@ export class HistoryService extends MysqlBaseService<
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim');
+      .leftJoinAndSelect('history.sim', 'sim')
+      .where('history.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
 
     // Execute the query and count
     const historyList = await qb.getMany();
@@ -60,12 +76,12 @@ export class HistoryService extends MysqlBaseService<
     // Map to DTOs
     const historyDtoArray = historyList
       .filter((history) => {
-        const isDevice = deviceId
-          ? history.device?.deviceId === deviceId
+        const isDevice = query.deviceId
+          ? history.device?.deviceId === query.deviceId
           : true;
-        const isCustomerId = customer_id
+        const isCustomerId = query.customer_id
           ? history.device?.customers.some(
-              (customer) => customer?.customer_id === customer_id,
+              (customer) => customer?.customer_id === query.customer_id,
             )
           : true;
         return isDevice && isCustomerId;

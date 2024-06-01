@@ -1,5 +1,4 @@
 import { Logger, Module } from '@nestjs/common';
-import { LoggerService } from 'src/logger/logger.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailService } from 'src/mail/mail.service';
 import { CustomersEntity } from './customers.entity';
@@ -16,9 +15,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 import { CoapService } from 'src/coap/coap.service';
 import { HistoryEntity } from 'src/devices/entities/history.entity';
-import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
 import { Notifications } from 'src/notification/entities/notification.entity';
@@ -41,8 +38,6 @@ import { Room } from 'src/room/room.entity';
       SignalEntity,
       SimEntity,
       HistoryEntity,
-      CoapClientIpAddressEntity,
-      ClientSocketEntity,
       Notifications,
       NotificationToken,
       WarningLogsEntity,
@@ -54,7 +49,6 @@ import { Room } from 'src/room/room.entity';
   controllers: [CustomersController],
   providers: [
     CustomersService,
-    LoggerService,
     MailService,
     UsersService,
     DevicesService,

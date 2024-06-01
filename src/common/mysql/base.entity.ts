@@ -6,7 +6,7 @@ import {
 } from 'typeorm';
 
 export class BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn('uuid', {})
   id: string;
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

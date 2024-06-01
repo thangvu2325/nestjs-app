@@ -16,6 +16,7 @@ import { Repository } from 'typeorm';
 import { CustomersService } from 'src/customers/customers.service';
 import { CustomersDto } from 'src/customers/customers.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { SecretKeyEntity } from './entity/secretKey.entity';
 const EXPIRE_TIME = 86400000;
 
 @Injectable()
@@ -23,21 +24,42 @@ export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(SecretKeyEntity)
+    private readonly secretRepository: Repository<SecretKeyEntity>,
     private readonly userService: UsersService,
     private readonly customersService: CustomersService,
     private jwtService: JwtService,
     private readonly redisTokenService: RedisService,
   ) {}
-  async login(dto: LoginDto) {
+  generateUniqueId(): string {
+    const characters =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 12;
+    let uniqueId = '';
+
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      uniqueId += characters.charAt(randomIndex);
+    }
+
+    return uniqueId;
+  }
+
+  async login(dto: LoginDto, type: 'default' | 'require' = 'default') {
     const user = await this.validateUser(dto);
     const customer = plainToInstance(CustomersDto, user.customer, {
       excludeExtraneousValues: true,
     });
+    if (type === 'require' && user.role === 'User') {
+      throw new HttpException(
+        'Bạn Không Có Quyền Truy Cập!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const payload = {
+      userId: user.id,
       email: user.email,
-      sub: {
-        role: user.role,
-      },
+      role: user.role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
@@ -52,8 +74,9 @@ export class AuthService {
     // Lưu Refresh Token vào Redis
     await this.redisTokenService.saveRefreshToken(user.id, refreshToken);
     const roomNewest = user.rooms
-      .filter((room) => room?.status === 'incomplete')
+      .filter((room) => room?.status === 'PENDING')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    console.log(user.rooms);
     return {
       user: plainToClass(
         UsersDto,
@@ -71,14 +94,50 @@ export class AuthService {
       },
     };
   }
-  async register(dto: UsersDto) {
+  async register(
+    dto: UsersDto,
+    secretKey?: string,
+    type: 'default' | 'require' = 'default',
+  ) {
     try {
-      const result = await this.userService.createUser(dto);
-      return result;
+      if (type !== 'default' && secretKey) {
+        const secretFound = await this.secretRepository.findOne({
+          where: { secretKey },
+        });
+
+        if (!secretFound || secretFound.isUse) {
+          throw new HttpException(
+            'Mã Secret key không đúng hoặc đã được sử dụng',
+            HttpStatus.FORBIDDEN,
+          );
+        }
+
+        secretFound.isUse = true;
+        await this.secretRepository.save(secretFound);
+
+        return await this.userService.createUser({
+          ...dto,
+          role: secretFound.role,
+        });
+      }
+
+      return await this.userService.createUser(dto);
     } catch (error) {
       console.error('Error while registering user:', error);
-      throw new Error(`Failed to register user: ${error.message}`);
+      throw new HttpException(
+        `Failed to register user: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
+  }
+  async createSecretKey(
+    role: 'Administrator' | 'Moderator' | 'User' = 'Moderator',
+  ) {
+    const secretKey = this.secretRepository.save({
+      secretKey: this.generateUniqueId(),
+      role,
+    });
+    return secretKey;
   }
   async verifyAccount(secretKey: number, email: string) {
     try {
@@ -100,7 +159,6 @@ export class AuthService {
   }
   async validateUser(dto: LoginDto) {
     const user = await this.userService.findOneUserWithEmail(dto.email);
-    console.log(dto.password, user.password);
     if (user && (await compare(dto.password, user.password))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
@@ -137,6 +195,20 @@ export class AuthService {
     }
     return { result: 'Email này chưa được sử dụng' };
   }
+  async checkSecretKey(secretKey: string): Promise<{ result: string }> {
+    const secretKeyFound = await this.secretRepository.findOne({
+      where: {
+        secretKey,
+      },
+    });
+    if (!secretKeyFound || secretKeyFound.isUse) {
+      throw new HttpException(
+        'secretKey này không tồn tại hoặc đã sử dụng!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return { result: 'secretKey này chưa được sử dụng' };
+  }
   async checkSmsExist(phone: string): Promise<{ result: string }> {
     const userFound = await this.userRepository.findOne({
       where: {
@@ -154,10 +226,9 @@ export class AuthService {
   async refreshToken(userDto: UsersDto) {
     const user = await this.userService.findOneUserWithEmail(userDto.email);
     const payload = {
+      userId: user.id,
       email: user.email,
-      sub: {
-        role: user.role,
-      },
+      role: user.role,
     };
     const customer = plainToInstance(CustomersDto, user.customer, {
       excludeExtraneousValues: true,

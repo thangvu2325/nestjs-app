@@ -5,6 +5,7 @@ import {
   JoinColumn,
   OneToMany,
   ManyToMany,
+  ManyToOne,
 } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -12,6 +13,7 @@ import { IsEmail, IsPhoneNumber } from 'class-validator';
 import { VerifyEntity } from './verifyKey.entity';
 import { Room } from 'src/room/room.entity';
 import { Message } from 'src/message/message.entity';
+import { ticketsEntity } from 'src/tickets/entity/tickets.entity';
 
 @Entity({
   name: 'user',
@@ -49,6 +51,8 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => Message, (message) => message.owner)
   messages: Message[];
 
+  @ManyToOne(() => ticketsEntity, (ticket) => ticket.assignee)
+  ticket: ticketsEntity[];
   @OneToMany(() => Room, (room) => room.owner)
   rooms: Room[];
 

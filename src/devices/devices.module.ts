@@ -13,12 +13,9 @@ import { HistoryController } from './history.controller';
 import { HistoryService } from './history.service';
 import { HistoryEntity } from './entities/history.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
-import { CoapClientIpAddressEntity } from 'src/coap/coapClientIpAddress.entity';
-import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
 import { CoapService } from 'src/coap/coap.service';
 import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 import { CustomersService } from 'src/customers/customers.service';
-import { LoggerService } from 'src/logger/logger.service';
 import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
 import { MessageService } from 'src/message/message.service';
@@ -45,8 +42,6 @@ import { WarningLogsController } from './warningLogs.controller';
       SignalEntity,
       SimEntity,
       HistoryEntity,
-      CoapClientIpAddressEntity,
-      ClientSocketEntity,
       Notifications,
       NotificationToken,
       WarningLogsEntity,
@@ -62,7 +57,6 @@ import { WarningLogsController } from './warningLogs.controller';
     DevicesService,
     CoapService,
     CustomersService,
-    LoggerService,
     MailService,
     UsersService,
     DevicesService,

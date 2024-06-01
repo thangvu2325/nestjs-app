@@ -28,4 +28,6 @@ export class DevicesDto extends BaseDto {
   AlarmReport: number;
   @Expose()
   roomId: string;
+  @Expose()
+  customer_id: string;
 }

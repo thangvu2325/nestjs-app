@@ -1,13 +1,11 @@
-import { IsNotEmpty, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 
 export class CreateRoomDto {
-  @IsNotEmpty()
-  @MinLength(1)
-  @MaxLength(100)
-  readonly title: string;
-
-  @IsNotEmpty()
-  @MinLength(1)
-  @MaxLength(1000)
-  readonly description: string;
+  @ApiProperty()
+  @Expose()
+  title: string;
+  @ApiProperty()
+  @Expose()
+  description: string;
 }

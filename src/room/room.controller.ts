@@ -42,15 +42,19 @@ export class RoomController {
     return this.roomService.createRoom(createRoomDto, data.userId);
   }
 
-  @Put(':id')
-  updateRoom(
-    @Body() data: { userId: string },
-    @Param('id', ParseIntPipe) id: string,
-    @Body() updateRoomDto: UpdateRoomDto,
-  ) {
-    return this.roomService.updateRoom(id, updateRoomDto, data.userId);
-  }
+  // @Put(':id')
+  // updateRoom(
+  //   @Body() data: { userId: string },
+  //   @Param('id', ParseIntPipe) id: string,
+  //   @Body() updateRoomDto: UpdateRoomDto,
+  // ) {
+  //   return this.roomService.updateRoom(id, updateRoomDto, data.userId);
+  // }
 
+  @Put(':id')
+  updateRoom(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
+    return this.roomService.updateRoom(id, updateRoomDto);
+  }
   @Delete(':id')
   deleteRoom(
     @Body() data: { userId: string },

@@ -1,10 +1,12 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 
 import { Message } from '../message/message.entity';
@@ -35,10 +37,17 @@ export class Room extends BaseEntity {
   @ManyToMany(() => UserEntity, (user) => user.joinedRooms)
   @JoinTable()
   members: UserEntity[];
+  @Column({ default: false })
+  request: boolean;
   @Column({
     type: 'enum',
-    enum: ['complete', 'incomplete'],
-    default: 'incomplete',
+    enum: ['RESOLVED', 'IN PROGRESS', 'PENDING', 'NEEDS CLARIFICATION'],
+    default: 'PENDING',
   })
   status: string;
+  @OneToOne(() => UserEntity)
+  @JoinColumn()
+  submiter: UserEntity;
+  @Column({ default: 0 })
+  rate: number;
 }

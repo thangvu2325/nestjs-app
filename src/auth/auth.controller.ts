@@ -14,8 +14,8 @@ import { LoginDto } from './Dto/auth.dto';
 import { UsersDto } from 'src/users/users.dto';
 import { RefreshJwtGuard } from './guards/refresh.guard';
 import { RedisService } from 'src/redis/redis.service';
-import { JwtGuard } from './guards/jwt.guard';
 import { HttpExceptionFilter } from 'src/http-exception.filter';
+import { PublicGuard } from './guards/publicRole.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -24,16 +24,14 @@ export class AuthController {
     private authService: AuthService,
     private readonly redisService: RedisService,
   ) {}
+  // User
   @UseFilters(new HttpExceptionFilter())
   @Post('register')
   async registerUser(@Body() dto: UsersDto) {
     return this.authService.register(dto);
   }
-  @Post('register/:secretKey')
-  async registerUserWithRoleModerator(@Body() dto: UsersDto) {
-    return this.authService.register(dto);
-  }
-  @UseGuards(JwtGuard)
+
+  @UseGuards(PublicGuard)
   @Post('resetpassword')
   async resetPassword(
     @Body() data: { email: string },
@@ -41,21 +39,20 @@ export class AuthController {
     console.log(data.email);
     return await this.userService.requestResetPassword(data.email);
   }
-
-  @UseGuards(JwtGuard)
+  @UseGuards(PublicGuard)
   @Post('checkactive')
   async checkActive(
     @Body('userId') userId: string,
   ): Promise<{ result: string }> {
     return await this.authService.checkActive(userId);
   }
-
   @Post('checkemailexist')
   async checkEmailExis(
     @Body('email') email: string,
   ): Promise<{ result: string }> {
     return await this.authService.checkEmailExist(email);
   }
+
   @Post('checksmsexist')
   async checkSmsExis(
     @Body('phone') phone: string,
@@ -79,10 +76,36 @@ export class AuthController {
   async refreshToken(@Request() req) {
     return await this.authService.refreshToken(req.user);
   }
-  @UseGuards(JwtGuard)
+  @UseGuards(PublicGuard)
   @Post('logout')
   async logout(@Body() user: UsersDto): Promise<{ result: string }> {
+    console.log(1);
     return await this.authService.logout(user.id);
+  }
+
+  // Manager
+  @Post('manager/register')
+  async registerUserWithRoleModerator(
+    @Body() dto: UsersDto,
+    @Body('secretKey') secretKey: string,
+  ) {
+    return this.authService.register(dto, secretKey, 'require');
+  }
+  @Post('manager/login')
+  async LoginModerator(@Body() dto: UsersDto) {
+    return this.authService.login(dto, 'require');
+  }
+  @Post('manager/secretKey')
+  createSecretKey(
+    @Body('role') role: 'Administrator' | 'Moderator' | 'User' = 'Moderator',
+  ) {
+    return this.authService.createSecretKey(role);
+  }
+  @Post('manager/checksecretKey')
+  async checkSecretKey(
+    @Body('secretKey') secretKey: string,
+  ): Promise<{ result: string }> {
+    return await this.authService.checkSecretKey(secretKey);
   }
   // Token
   @Get('getalltokens')

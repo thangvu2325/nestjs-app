@@ -22,7 +22,6 @@ import { SimEntity } from 'src/devices/entities/sim.entity';
 import { Repository } from 'typeorm';
 import { DataCoapType } from 'types/type';
 import { URL } from 'url';
-import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
 import { NotificationService } from 'src/notification/notification.service';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
@@ -53,15 +52,12 @@ export class CoapService {
     private readonly historyRepository: Repository<HistoryEntity>,
     @InjectRepository(WarningLogsEntity)
     private readonly warningLogsRepository: Repository<WarningLogsEntity>,
-    @InjectRepository(CoapClientIpAddressEntity)
-    private readonly coapClientIpAdressRepository: Repository<CoapClientIpAddressEntity>,
     private readonly devicesServices: DevicesService,
     private readonly chatGateWay: ChatGateway,
     private readonly logger: Logger,
     private readonly notificationService: NotificationService,
     private readonly mailService: MailService,
   ) {
-    this.coapClientIpAdressRepository.clear();
     updateTiming({
       ackTimeout: 0.2,
       ackRandomFactor: 1.0,
@@ -173,15 +169,11 @@ export class CoapService {
   }
 
   async startServer() {
-    this.server.close(async () => {
-      await this.coapClientIpAdressRepository.clear();
-    });
     this.server.on('request', async (req, res) => {
       // Tạo một đối tượng URL từ URL yêu cầu
       this.logger.log(
         'Client connected: ' + req.rsinfo.address + ':' + req.rsinfo.port,
       );
-      const ipClient = 'coap://' + req.rsinfo.address + ':' + req.rsinfo.port;
       const requestUrl = new URL(req.url, `coap://${req.headers['Host']}`);
       this.logger.log(requestUrl.pathname);
       // Lấy các tham số truy vấn từ URL
@@ -299,29 +291,6 @@ export class CoapService {
                 this.logger.log(`Device not found with id: ${device.deviceId}`);
                 res.end(`Device not found with id: ${device.deviceId}`);
                 break;
-              }
-              const coapClientFound =
-                await this.coapClientIpAdressRepository.findOne({
-                  where: {
-                    ip: ipClient,
-                  },
-                });
-              if (!coapClientFound) {
-                await this.coapClientIpAdressRepository.save({
-                  ip: ipClient,
-                  deviceId: device.deviceId,
-                } as CoapClientIpAddressEntity);
-                this.logger.log(
-                  `thêm mới ip của thiết bị ${device.deviceId} thành công`,
-                );
-              } else {
-                await this.coapClientIpAdressRepository.update(
-                  coapClientFound.id,
-                  { ip: ipClient },
-                );
-                this.logger.log(
-                  `Cập nhật ip của thiết bị ${device.deviceId} thành công`,
-                );
               }
 
               // // // Save changes to the database

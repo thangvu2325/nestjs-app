@@ -13,8 +13,7 @@ import { CustomersEntity } from 'src/customers/customers.entity';
 import { HistoryEntity } from 'src/devices/entities/history.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { ClientSocketEntity } from 'src/chat/clientSocket.entity';
-import { CoapClientIpAddressEntity } from './coapClientIpAddress.entity';
+
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
 import { MailService } from 'src/mail/mail.service';
@@ -32,7 +31,6 @@ import { Room } from 'src/room/room.entity';
   imports: [
     JwtModule,
     TypeOrmModule.forFeature([
-      ClientSocketEntity,
       DevicesEntity,
       BatteryEntity,
       SensorsEntity,
@@ -45,7 +43,6 @@ import { Room } from 'src/room/room.entity';
       CustomersEntity,
       Message,
       UserEntity,
-      CoapClientIpAddressEntity,
       WarningLogsEntity,
       Room,
     ]),

@@ -67,7 +67,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
             })
           : null;
         const roomNewest = user.rooms
-          .filter((room) => room?.status === 'incomplete')
+          .filter((room) => room?.status === 'PENDING')
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
 
         return plainToClass(

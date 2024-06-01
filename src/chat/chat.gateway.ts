@@ -12,7 +12,6 @@ import {
 
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
-import { ClientSocketEntity } from './clientSocket.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { CreateMessageDto } from 'src/message/dto/create-message.dto';
@@ -24,16 +23,12 @@ export class ChatGateway
 {
   constructor(
     private jwtService: JwtService,
-    @InjectRepository(ClientSocketEntity)
-    private readonly clientSocketRepository: Repository<ClientSocketEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly deviceRepository: Repository<DevicesEntity>,
     private readonly messageService: MessageService,
-  ) {
-    this.clientSocketRepository.clear();
-  }
+  ) {}
 
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer() io: Server;
@@ -46,27 +41,26 @@ export class ChatGateway
     const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
     client.setMaxListeners(20);
-    this.logger.log(`Client id: ${client.id} connected`);
-    this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    // if (!token || !userId) {
-    //   client.disconnect();
-    //   return;
-    // }
-    // try {
-    //   const decodedToken = await this.jwtService.verifyAsync(token, {
-    //     secret: process.env.jwtSecretKey,
-    //   });
-    //   if (!decodedToken) {
-    //     console.log(decodedToken);
-    //     client.disconnect();
-    //     return;
-    //   }
-    //   this.logger.log(`Client id: ${client.id} connected`);
-    //   this.logger.debug(`Number of connected clients: ${sockets.size}`);
-    // } catch (error) {
-    //   this.logger.error(`Error during connection: ${error.message}`);
-    //   client.disconnect();
-    // }
+    console.log(token, userId);
+    if (!token || !userId) {
+      client.disconnect();
+      return;
+    }
+    try {
+      const decodedToken = await this.jwtService.verifyAsync(token, {
+        secret: process.env.jwtSecretKey,
+      });
+      if (!decodedToken) {
+        console.log(decodedToken);
+        client.disconnect();
+        return;
+      }
+      this.logger.log(`Client id: ${client.id} connected`);
+      this.logger.debug(`Number of connected clients: ${sockets.size}`);
+    } catch (error) {
+      this.logger.error(`Error during connection: ${error.message}`);
+      client.disconnect();
+    }
   }
 
   async getUserIdListbyDeviceId(deviceId: string): Promise<Array<string>> {

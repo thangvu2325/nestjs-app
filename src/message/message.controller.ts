@@ -3,10 +3,10 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { MessageService } from './message.service';
-import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { PublicGuard } from 'src/auth/guards/publicRole.guard';
 
 @Controller('messages')
-@UseGuards(JwtGuard)
+@UseGuards(PublicGuard)
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
