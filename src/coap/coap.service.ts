@@ -240,7 +240,6 @@ export class CoapService {
                 res.end('Dữ liệu không hợp lệ');
                 return;
               }
-              console.log('m dang gui cc gi day');
               const data: DataCoapType = JSON.parse(payload) as DataCoapType;
               if (!isArray(data)) {
                 break;
@@ -338,15 +337,6 @@ export class CoapService {
                     },
                   }),
                 );
-                // await this.chatGateWay.sendDeviceDataToClient(
-                //   device.deviceId,
-                //   JSON.stringify({
-                //     ...historyDevice,
-                //     deviceId: device.deviceId,
-                //     updatedAt: new Date(),
-                //     // warningLogs:
-                //   }),
-                // );
                 res.code = '2.05';
                 res.write('update thiet bi thanh cong');
                 res.end('');
