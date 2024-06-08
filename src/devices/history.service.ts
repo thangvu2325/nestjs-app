@@ -123,4 +123,65 @@ export class HistoryService extends MysqlBaseService<
       historyCount: historyDtoArray.length,
     };
   }
+  async GetRequest(query: {
+    customer_id?: string;
+    deviceId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Array<{ requestCount: number; time: Date }>> {
+    const startDate = query.startDate
+      ? new Date(query.startDate)
+      : new Date(new Date().setDate(new Date().getDate() - 10));
+    const endDate = query.endDate ? new Date(query.endDate) : new Date();
+    if (
+      (startDate && isNaN(startDate.getTime())) ||
+      (endDate && isNaN(endDate.getTime()))
+    ) {
+      throw new Error('Invalid date format');
+    }
+    const qb = await this.historyRepository
+      .createQueryBuilder('history')
+      .leftJoinAndSelect('history.device', 'devices')
+      .leftJoinAndSelect('devices.customers', 'customers')
+      .where('history.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+
+    // Execute the query and count
+    const historyList = await qb.getMany();
+
+    // Map to DTOs
+    const historyDtoArray = historyList
+      .filter((history) => {
+        const isDevice = query.deviceId
+          ? history.device?.deviceId === query.deviceId
+          : true;
+        const isCustomerId = query.customer_id
+          ? history.device?.customers.some(
+              (customer) => customer?.customer_id === query.customer_id,
+            )
+          : true;
+        return isDevice && isCustomerId;
+      })
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    const groupedByDate = historyDtoArray.reduce((acc, curr) => {
+      // Lấy ngày tháng năm từ createAt và tạo thành chuỗi để sử dụng làm key
+      const dateKey = curr.createdAt.toISOString().split('T')[0];
+      // Nếu chưa tồn tại key này trong accumulator, thêm vào với giá trị ban đầu
+      if (!acc[dateKey]) {
+        acc[dateKey] = { time: new Date(dateKey), RequestCount: 0 };
+      }
+
+      // Tăng RequestCount cho ngày tương ứng
+      acc[dateKey].RequestCount += 1;
+
+      return acc;
+    }, {});
+    // Chuyển từ object sang array
+    const result: Array<{ requestCount: number; time: Date }> =
+      Object.values(groupedByDate);
+    return result;
+  }
 }

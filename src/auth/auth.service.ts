@@ -74,9 +74,8 @@ export class AuthService {
     // Lưu Refresh Token vào Redis
     await this.redisTokenService.saveRefreshToken(user.id, refreshToken);
     const roomNewest = user.rooms
-      .filter((room) => room?.status === 'PENDING')
+      .filter((room) => room?.status !== 'RESOLVED')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-    console.log(user.rooms);
     return {
       user: plainToClass(
         UsersDto,

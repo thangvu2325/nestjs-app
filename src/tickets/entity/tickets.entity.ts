@@ -1,4 +1,4 @@
-import { Entity, Column, OneToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 
 import { UserEntity } from 'src/users/entity/user.entity';
@@ -8,7 +8,7 @@ import { ticketMessageEntity } from './ticket-message.entity';
   name: 'tickets',
 })
 export class ticketsEntity extends BaseEntity {
-  @Column({ default: null, unique: true })
+  @Column({ default: '' })
   topic: string;
   @Column({
     type: 'enum',
@@ -16,8 +16,7 @@ export class ticketsEntity extends BaseEntity {
     default: 'Normal',
   })
   priority: string;
-  @OneToOne(() => UserEntity)
-  @JoinColumn()
+  @ManyToOne(() => UserEntity, (user) => user.ticket)
   owner: UserEntity;
   @OneToOne(() => UserEntity)
   @JoinColumn()
@@ -35,8 +34,6 @@ export class ticketsEntity extends BaseEntity {
     default: 'Error',
   })
   category: string;
-  @OneToMany(() => UserEntity, (user) => user.ticket)
-  assignee: UserEntity[];
   @Column({
     type: 'enum',
     enum: ['RESOLVED', 'IN PROGRESS', 'PENDING', 'NEEDS CLARIFICATION'],

@@ -34,6 +34,7 @@ import { SecretKeyEntity } from './auth/entity/secretKey.entity';
 import { TicketModule } from './tickets/tickets.module';
 import { ticketsEntity } from './tickets/entity/tickets.entity';
 import { ticketMessageEntity } from './tickets/entity/ticket-message.entity';
+import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { ticketMessageEntity } from './tickets/entity/ticket-message.entity';
           WarningLogsEntity,
           ticketMessageEntity,
           SecretKeyEntity,
+          KeyAddDeviceEntity,
         ],
         synchronize: true,
       }),

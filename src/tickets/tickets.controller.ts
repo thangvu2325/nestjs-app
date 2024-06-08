@@ -8,7 +8,14 @@ export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
   @Get()
   getAllTickets(
-    @Query() query: { startDate: string; endDate: string; status: string },
+    @Query()
+    query: {
+      startDate: string;
+      endDate: string;
+      status: string;
+      tickedId: string;
+      userId: string;
+    },
   ) {
     return this.ticketsService.Get(query);
   }
@@ -18,7 +25,11 @@ export class TicketsController {
   }
 
   @Put(':ticketId')
-  chang(@Body() Dto: EditTicketDto, @Param(':ticketId') ticketId: string) {
+  updateTicket(
+    @Body() Dto: EditTicketDto,
+    @Param('ticketId') ticketId: string,
+  ) {
+    console.log(ticketId);
     return this.ticketsService.updateTicket(ticketId, Dto);
   }
 }

@@ -27,7 +27,7 @@ export class DevicesController {
     return this.devicessService.findAll({}, customer_id);
   }
   @Post('')
-  createDevice(@Body() Dto: DevicesDto): Promise<{ result: string }> {
+  createDevice(@Body() Dto: DevicesDto) {
     return this.devicessService.saveDevice(Dto);
   }
   @Put(':deviceId/:roomId')

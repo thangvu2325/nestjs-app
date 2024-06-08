@@ -21,6 +21,9 @@ export class DevicesEntity extends BaseEntity {
   @ManyToMany(() => CustomersEntity, (customer) => customer.devices)
   @JoinTable()
   customers: CustomersEntity[];
+  @OneToOne(() => CustomersEntity)
+  @JoinColumn()
+  owner: CustomersEntity;
   @Column({ unique: true })
   deviceId: string;
   @Column({ default: '' })

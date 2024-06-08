@@ -23,7 +23,8 @@ export class TicketsService {
     startDate?: string;
     endDate?: string;
     status?: string;
-    ticketId?: string;
+    userId?: string;
+    tickedId?: string;
   }): Promise<{ ticketsList: Array<TicketDto>; ticketsCount: number }> {
     const startDate = query.startDate
       ? new Date(query.startDate)
@@ -41,7 +42,7 @@ export class TicketsService {
       .leftJoinAndSelect('tickets.reply', 'reply')
       .leftJoinAndSelect('owner.customer', 'customers')
       .leftJoinAndSelect('tickets.submiter', 'submiter')
-      .leftJoinAndSelect('tickets.assignee', 'assignee')
+
       .where('tickets.createdAt BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
@@ -52,16 +53,23 @@ export class TicketsService {
         status: query.status,
       });
     }
-    if (query.ticketId) {
-      qb.andWhere('tickets.id=:ticketId', {
-        ticketId: query.ticketId,
-      });
-    }
 
     const ticketsList = await qb.getMany();
-
     const ticketsDtoArray = ticketsList
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .filter((ticket) => {
+        if (query.tickedId) {
+          console.log(ticket.id, query.tickedId);
+          return ticket.id === query.tickedId;
+        }
+        return true;
+      })
+      .filter((ticket) => {
+        if (query.userId) {
+          return ticket.owner.id === query.userId;
+        }
+        return true;
+      })
       .map((tickets) => {
         return {
           ...plainToInstance(
@@ -70,9 +78,6 @@ export class TicketsService {
               ...tickets,
               customer_Id: tickets?.owner?.customer?.customer_id,
               submiter: tickets.submiter ? tickets.submiter.email : null,
-              assignee: tickets.assignee.length
-                ? tickets.assignee.map((userAssignee) => userAssignee.email)
-                : null,
               message: tickets.reply ? tickets.reply.message : null,
             },
             { excludeExtraneousValues: true },
@@ -90,19 +95,28 @@ export class TicketsService {
       where: {
         id: userId,
       },
+      relations: ['ticket'],
     });
     if (!userFound) {
       throw new HttpException('User này không tồn tại!', HttpStatus.FORBIDDEN);
     }
     const ticket = await this.ticketsRepository.create(Dto);
     ticket.owner = userFound;
-    await this.ticketsRepository.save(ticket);
-    return { result: 'thành công' };
+    await this.ticketsRepository.save(ticket as ticketsEntity);
+    if (!userFound.ticket) {
+      userFound.ticket = [];
+    }
+    userFound.ticket.push(ticket);
+    await this.usersRepository.save(userFound);
+
+    return plainToInstance(TicketDto, ticket, {
+      excludeExtraneousValues: true,
+    });
   }
   async updateTicket(ticketId: string, Dto: EditTicketDto) {
     const ticketFound = await this.ticketsRepository.findOne({
       where: { id: ticketId },
-      relations: ['reply', 'submiter', 'assignee'],
+      relations: ['reply', 'submiter'],
     });
 
     if (!ticketFound) {
@@ -112,14 +126,20 @@ export class TicketsService {
       );
     }
 
-    const { message, submiter, assignee, ...props } = Dto;
+    const { message, submiter, ...props } = Dto;
 
     if (message) {
-      if (ticketFound.reply) {
+      if (ticketFound.reply?.id) {
         await this.ticketMessageRepository.update(ticketFound.reply.id, {
           ...ticketFound.reply,
           message: Dto.message,
         });
+      } else {
+        const newTicketMessage = await this.ticketMessageRepository.save({
+          ...ticketFound.reply,
+          message: Dto.message,
+        });
+        ticketFound.reply = newTicketMessage;
       }
     }
 
@@ -136,41 +156,19 @@ export class TicketsService {
       ticketFound.submiter = user;
     }
 
-    if (assignee && assignee.length) {
-      const assigneePromises = assignee.map(async (ass) => {
-        const user = await this.usersRepository.findOne({
-          where: { id: ass },
-        });
-        if (!user) {
-          throw new HttpException(
-            'Người dùng này không tồn tại',
-            HttpStatus.FORBIDDEN,
-          );
-        }
-        const idx = ticketFound.assignee.findIndex(
-          (assFind) => assFind.id === user.id,
-        );
-        if (idx === -1) {
-          ticketFound.assignee.push(user);
-        }
-      });
-      await Promise.all(assigneePromises);
-    }
     const updatedTicket = {
       ...ticketFound,
       ...props,
     };
-
+    console.log(ticketFound);
     const ticketUpdated = await this.ticketsRepository.save(updatedTicket);
+    console.log(ticketUpdated);
     return plainToInstance(
       TicketDto,
       {
         ...ticketUpdated,
         customer_Id: ticketUpdated?.owner?.customer?.customer_id,
         submiter: ticketUpdated.submiter ? ticketUpdated.submiter.email : null,
-        assignee: ticketUpdated.assignee.length
-          ? ticketUpdated.assignee.map((userAssignee) => userAssignee.email)
-          : null,
         message: ticketUpdated.reply ? ticketUpdated.reply.message : null,
       },
       { excludeExtraneousValues: true },

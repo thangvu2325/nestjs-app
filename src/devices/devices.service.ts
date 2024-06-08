@@ -65,6 +65,7 @@ export class DevicesService extends MysqlBaseService<
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
+      .leftJoinAndSelect('devices.owner', 'owner')
       .leftJoinAndSelect('devices.room', 'room')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
@@ -123,6 +124,12 @@ export class DevicesService extends MysqlBaseService<
               return cus.customer_id;
             })
             .join('|'),
+          role:
+            customer_id !== 'all'
+              ? device?.owner?.customer_id === customer_id
+                ? 'owner'
+                : 'member'
+              : undefined,
         },
         { excludeExtraneousValues: true },
       );
@@ -131,7 +138,7 @@ export class DevicesService extends MysqlBaseService<
     return { devices: devicesDtoArray, devicesCount: devicesDtoArray.length };
   }
 
-  async saveDevice(Dto: DevicesDto): Promise<{ result: string }> {
+  async saveDevice(Dto: DevicesDto): Promise<DevicesDto> {
     try {
       // Generate secret key and device ID
       const secretKey = bcrypt.genSaltSync(10);
@@ -153,9 +160,11 @@ export class DevicesService extends MysqlBaseService<
 
       // Associate room with the device and update the device entry
       devices.room = room;
-      await this.devicesReposity.save(devices);
+      const device = await this.devicesReposity.save(devices);
 
-      return { result: 'thành công' };
+      return plainToInstance(DevicesDto, device, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       console.error('Error occurred while saving device:', error);
       throw new Error('Failed to save device');

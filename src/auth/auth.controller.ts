@@ -41,10 +41,8 @@ export class AuthController {
   }
   @UseGuards(PublicGuard)
   @Post('checkactive')
-  async checkActive(
-    @Body('userId') userId: string,
-  ): Promise<{ result: string }> {
-    return await this.authService.checkActive(userId);
+  checkActive(@Body('userId') userId: string): Promise<{ result: string }> {
+    return this.authService.checkActive(userId);
   }
   @Post('checkemailexist')
   async checkEmailExis(

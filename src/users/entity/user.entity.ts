@@ -5,7 +5,6 @@ import {
   JoinColumn,
   OneToMany,
   ManyToMany,
-  ManyToOne,
 } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { CustomersEntity } from 'src/customers/customers.entity';
@@ -50,11 +49,10 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => Message, (message) => message.owner)
   messages: Message[];
-
-  @ManyToOne(() => ticketsEntity, (ticket) => ticket.assignee)
-  ticket: ticketsEntity[];
   @OneToMany(() => Room, (room) => room.owner)
   rooms: Room[];
+  @OneToMany(() => ticketsEntity, (ticket) => ticket.owner)
+  ticket: ticketsEntity[];
 
   @ManyToMany(() => Room, (room) => room.members)
   joinedRooms: Room[];

@@ -31,6 +31,7 @@ import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
 import { Room } from 'src/room/room.entity';
 import { SecretKeyEntity } from './entity/secretKey.entity';
+import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { SecretKeyEntity } from './entity/secretKey.entity';
       Notifications,
       NotificationToken,
       WarningLogsEntity,
+      KeyAddDeviceEntity,
       Room,
       SecretKeyEntity,
     ]), // Add DevicesEntity here

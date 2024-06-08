@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { BaseDto } from 'src/common/base.dto';
 
@@ -12,8 +13,10 @@ export class EditTicketDto extends BaseDto {
   rate: number;
   @Expose()
   category: string;
+  @ApiProperty()
   @Expose()
-  status: string;
+  status: 'RESOLVED' | 'PENDING' | 'IN PROGRESS' | 'NEEDS CLARIFICATION';
+  @ApiProperty()
   @Expose()
   message: string;
   @Expose()

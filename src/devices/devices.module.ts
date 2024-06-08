@@ -28,6 +28,7 @@ import { ChatModule } from 'src/chat/chat.module';
 import { Room } from 'src/room/room.entity';
 import { WarningLogsService } from './warningLogs.service';
 import { WarningLogsController } from './warningLogs.controller';
+import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { WarningLogsController } from './warningLogs.controller';
       SensorsEntity,
       SignalEntity,
       SimEntity,
+      KeyAddDeviceEntity,
       HistoryEntity,
       Notifications,
       NotificationToken,

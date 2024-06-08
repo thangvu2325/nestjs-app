@@ -24,11 +24,17 @@ import { NotificationService } from 'src/notification/notification.service';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
 import { Room } from 'src/room/room.entity';
+import { TicketsService } from 'src/tickets/tickets.service';
+import { ticketsEntity } from 'src/tickets/entity/tickets.entity';
+import { ticketMessageEntity } from 'src/tickets/entity/ticket-message.entity';
+import { KeyAddDeviceEntity } from './keyAddDevice.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       CustomersEntity,
+      ticketsEntity,
+      ticketMessageEntity,
       VerifyEntity,
       UserEntity,
       DevicesEntity,
@@ -41,6 +47,7 @@ import { Room } from 'src/room/room.entity';
       Notifications,
       NotificationToken,
       WarningLogsEntity,
+      KeyAddDeviceEntity,
       Room,
     ]),
     JwtModule,
@@ -49,6 +56,7 @@ import { Room } from 'src/room/room.entity';
   controllers: [CustomersController],
   providers: [
     CustomersService,
+    TicketsService,
     MailService,
     UsersService,
     DevicesService,

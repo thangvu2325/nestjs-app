@@ -26,4 +26,16 @@ export class HistoryController {
   }> {
     return this.historyService.Get(query);
   }
+  @Get('request')
+  getAllRequest(
+    @Query()
+    query: {
+      customer_id?: string;
+      deviceId?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ) {
+    return this.historyService.GetRequest(query);
+  }
 }

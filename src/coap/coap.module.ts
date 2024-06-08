@@ -26,6 +26,7 @@ import { UsersService } from 'src/users/users.service';
 import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
 import { Room } from 'src/room/room.entity';
+import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { Room } from 'src/room/room.entity';
       BatteryEntity,
       SensorsEntity,
       SignalEntity,
+      KeyAddDeviceEntity,
       VerifyEntity,
       SimEntity,
       HistoryEntity,

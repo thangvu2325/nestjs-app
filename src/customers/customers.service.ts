@@ -2,14 +2,20 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
-import { plainToClass } from 'class-transformer';
+import { plainToClass, plainToInstance } from 'class-transformer';
 import { CustomersEntity } from './customers.entity';
 import { CustomersDto } from './customers.dto';
 import { DevicesDto } from 'src/devices/dto/devices.dto';
-
+import * as bcrypt from 'bcrypt';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { CoapService } from 'src/coap/coap.service';
+import { HistoryDto } from 'src/devices/dto/history.dto';
+import { SensorsDto } from 'src/devices/dto/sensors.dto';
+import { BatteryDto } from 'src/devices/dto/battery.dto';
+import { SimDto } from 'src/devices/dto/sim.dto';
+import { SignalDto } from 'src/devices/dto/signal.dto';
+import { KeyAddDeviceEntity } from './keyAddDevice.entity';
 
 @Injectable()
 export class CustomersService extends MysqlBaseService<
@@ -19,6 +25,8 @@ export class CustomersService extends MysqlBaseService<
   constructor(
     @InjectRepository(CustomersEntity)
     private readonly customersReposity: Repository<CustomersEntity>,
+    @InjectRepository(KeyAddDeviceEntity)
+    private readonly keyAddDeviceReposity: Repository<KeyAddDeviceEntity>,
     @InjectRepository(UserEntity)
     private readonly usersReposity: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
@@ -103,7 +111,8 @@ export class CustomersService extends MysqlBaseService<
   async addDevice(
     dto: DevicesDto,
     customerId: string,
-  ): Promise<{ result: string }> {
+    type: 'owner' | 'member' = 'member',
+  ) {
     // Tìm khách hàng dựa trên customerId và load danh sách thiết bị của khách hàng đó
     const customer = await this.customersReposity.findOne({
       where: { customer_id: customerId },
@@ -119,39 +128,163 @@ export class CustomersService extends MysqlBaseService<
     }
 
     // Tìm thiết bị dựa trên deviceId
-    const device = await this.devicesReposity.findOne({
-      where: { deviceId: dto.deviceId },
-    });
+    const device = await this.devicesReposity
+      .createQueryBuilder('devices')
+      .leftJoinAndSelect('devices.history', 'history')
+      .leftJoinAndSelect('devices.room', 'room')
+      .leftJoinAndSelect('history.sensors', 'sensors')
+      .leftJoinAndSelect('history.battery', 'battery')
+      .leftJoinAndSelect('history.signal', 'signal')
+      .leftJoinAndSelect('history.sim', 'sim')
+      .leftJoinAndSelect('devices.customers', 'customers')
+      .where('devices.deviceId = :deviceId', {
+        deviceId: dto.deviceId,
+      })
+      .getOne();
 
     // Kiểm tra xem thiết bị có tồn tại hay không
     if (!device) {
       throw new HttpException(`Không tìm thấy thiết bị`, HttpStatus.FORBIDDEN);
     }
+    if (type === 'owner') {
+      // Kiểm tra mã bí mật của thiết bị
+      if (device.secretKey !== dto.secretKey) {
+        throw new HttpException(`Mã bí mật không đúng`, HttpStatus.FORBIDDEN);
+      }
+    } else {
+      const keyFound = await this.keyAddDeviceReposity.findOne({
+        where: {
+          deviceId: device.deviceId,
+        },
+      });
 
-    // Kiểm tra mã bí mật của thiết bị
-    if (device.secretKey !== dto.secretKey) {
-      throw new HttpException(`Mã bí mật không đúng`, HttpStatus.FORBIDDEN);
+      if (keyFound.key !== dto.secretKey) {
+        throw new HttpException(`Mã bí mật không đúng`, HttpStatus.FORBIDDEN);
+      } else if (
+        new Date(keyFound.activeKeyExpiresAt).getTime() <= new Date().getTime()
+      ) {
+        throw new HttpException(`Mã bí mật đã hết hạn`, HttpStatus.FORBIDDEN);
+      }
     }
 
-    // // Gửi yêu cầu kết nối đến thiết bị
-    // await this.coapService.sendRequestToClient(
-    //   device.deviceId,
-    //   'kết nối thành công',
-    // );
     if (!customer.devices) {
       customer.devices = []; // Khởi tạo mảng nếu chưa tồn tại
     }
     // Thêm thiết bị vào danh sách thiết bị của khách hàng
-    customer.devices.push(device);
-    await this.customersReposity.save(customer);
-    if (!device.customers) {
-      device.customers = []; // Khởi tạo mảng nếu chưa tồn tại
-    }
-    // Thêm khách hàng vào danh sách khách hàng của thiết bị
-    device.customers.push(customer);
-    await this.devicesReposity.save(device);
 
-    return { result: 'Thành công' };
+    const deviceExists = customer.devices.some(
+      (device) => device.deviceId === dto.deviceId,
+    );
+
+    if (deviceExists) {
+      throw new HttpException(`Thiết bị đã được thêm`, HttpStatus.FORBIDDEN);
+    } else {
+      customer.devices.push(device);
+    }
+    await this.customersReposity.save(customer);
+    if (type === 'owner') {
+      if (device.owner) {
+        throw new HttpException(
+          `Thiết bị đã được sử dụng`,
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      device.owner = customer;
+    } else {
+      if (!device.customers) {
+        device.customers = [];
+      }
+      const customerExists = device.customers.some(
+        (cus) => cus.customer_id === customerId,
+      );
+      if (customerExists) {
+        throw new HttpException(
+          `Người dùng đã được thêm thiết bị này`,
+          HttpStatus.FORBIDDEN,
+        );
+      } else {
+        device.customers.push(customer);
+      }
+    }
+
+    await this.devicesReposity.save(device);
+    const historyLast = device?.history?.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )[0];
+    let data = {} as HistoryDto;
+    if (historyLast) {
+      data = {
+        sensors: plainToInstance(SensorsDto, historyLast.sensors, {
+          excludeExtraneousValues: true,
+        }),
+        battery: plainToInstance(BatteryDto, historyLast.battery, {
+          excludeExtraneousValues: true,
+        }),
+        sim: plainToInstance(SimDto, historyLast.sim, {
+          excludeExtraneousValues: true,
+        }),
+        signal: plainToInstance(SignalDto, {
+          ...historyLast.signal,
+        }),
+      } as HistoryDto;
+    } else {
+      data = {} as HistoryDto;
+    }
+    return plainToClass(
+      DevicesDto,
+      {
+        ...device,
+        ...data,
+        roomId: device?.room?.id ?? null,
+        active: device.customers.length ? true : false,
+        customer_id: device.customers
+          .map((cus) => {
+            return cus.customer_id;
+          })
+          .join('|'),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  async createKeyAddDevice(userId: string, deviceId: string) {
+    const userFound = await this.usersReposity.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['customer'],
+    });
+    if (!userFound) {
+      console.log(1);
+      throw new HttpException(
+        `Không tìm thấy người dùng`,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    const deviceFound = await this.devicesReposity.findOne({
+      where: {
+        deviceId,
+      },
+      relations: ['owner'],
+    });
+    if (!deviceFound) {
+      console.log(2);
+
+      throw new HttpException(`Không tìm thấy thiết bị`, HttpStatus.FORBIDDEN);
+    }
+    if (deviceFound.owner.customer_id !== userFound.customer.customer_id) {
+      throw new HttpException(
+        `Không có quyền chia sẽ thiết bị`,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    const secretKey = bcrypt.genSaltSync(10);
+    const keyAddDevice = this.keyAddDeviceReposity.save({
+      key: secretKey,
+      deviceId: deviceFound.deviceId,
+      activeKeyExpiresAt: new Date(Date.now() + 120 * 1000),
+    });
+    return keyAddDevice;
   }
   async updateDevice(
     Dto: DevicesDto,
