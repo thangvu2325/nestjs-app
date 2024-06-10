@@ -459,20 +459,19 @@ export class CustomersService extends MysqlBaseService<
         HttpStatus.FORBIDDEN,
       );
     }
-
-    // Tìm thiết bị dựa trên deviceId và đảm bảo rằng nó thuộc về khách hàng hiện tại
     const device = await this.devicesReposity.findOne({
-      where: { deviceId: deviceId, customers: { id: customer.id } },
-      relations: ['customers'],
+      where: { deviceId: deviceId },
+      relations: ['customers', 'owner'],
     });
 
     if (!device) {
-      throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Không tìm thấy khách hàng',
+        HttpStatus.FORBIDDEN,
+      );
     }
-
     device.AlarmReport = device.AlarmReport === 1 ? 0 : 1;
     await this.devicesReposity.save(device);
-
     return { result: 'Thành công' };
   }
 }

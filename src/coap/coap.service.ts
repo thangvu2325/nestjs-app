@@ -110,11 +110,37 @@ export class CoapService {
               `Device history not found for deviceId: ${deviceId}`,
             );
           }
-
+          if (device.AlarmReport === 0) {
+            setTimeout(async () => {
+              device.AlarmReport = 1;
+              await this.devicesReposity.save(device);
+              await this.chatGateWay.sendDeviceDataToRoom(
+                device.deviceId,
+                JSON.stringify({
+                  type: 'device',
+                  message: {
+                    deviceId: device?.deviceId,
+                    ...device?.history?.sort(
+                      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+                    )[0],
+                    AlarmReport: 0,
+                  },
+                }),
+              );
+              this.logger.log(
+                'Warning: Dừng cảnh báo do không phát hiện cháy.',
+              );
+              const warningUser = this.sendWarningUserList.find(
+                (user) => user.deviceId === deviceId,
+              );
+              warningUser.status = 'idle';
+              clearTimeout(AlarmTimeout);
+            }, 5000);
+            return;
+          }
           const historyLast = device.history.sort(
             (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
           )[0];
-
           if (historyLast.sensors.AlarmSatus) {
             // Thực hiện hành động cảnh báo ở đây
             // Ví dụ: Gửi email, thông báo, hoặc thực hiện các hành động khẩn cấp khác
