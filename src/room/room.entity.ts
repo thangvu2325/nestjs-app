@@ -6,7 +6,6 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
-  OneToOne,
 } from 'typeorm';
 
 import { Message } from '../message/message.entity';
@@ -45,7 +44,7 @@ export class Room extends BaseEntity {
     default: 'PENDING',
   })
   status: string;
-  @OneToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, (user) => user.roomSubmited)
   @JoinColumn()
   submiter: UserEntity;
   @Column({ default: 0 })

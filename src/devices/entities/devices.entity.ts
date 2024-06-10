@@ -4,6 +4,7 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   OneToOne,
 } from 'typeorm';
@@ -21,7 +22,7 @@ export class DevicesEntity extends BaseEntity {
   @ManyToMany(() => CustomersEntity, (customer) => customer.devices)
   @JoinTable()
   customers: CustomersEntity[];
-  @OneToOne(() => CustomersEntity)
+  @ManyToOne(() => CustomersEntity, (customer) => customer.myDevice)
   @JoinColumn()
   owner: CustomersEntity;
   @Column({ unique: true })

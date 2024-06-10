@@ -10,7 +10,6 @@ export class SearchRoomsDto extends PaginationDto {
   @IsOptional()
   @Type(() => String)
   readonly ownerId?: string;
-
   @IsOptional()
   @Type(() => String)
   readonly type?: 'message-suporter' | 'message-device';

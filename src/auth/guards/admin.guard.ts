@@ -4,6 +4,6 @@ import { JwtGuard } from './jwt.guard';
 @Injectable()
 export class AdminGuard extends JwtGuard {
   constructor(jwtService: JwtService) {
-    super(jwtService, 'admin');
+    super(jwtService, 'Administrator');
   }
 }

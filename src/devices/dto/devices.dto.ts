@@ -12,6 +12,7 @@ export class DevicesDto extends BaseDto {
   deviceId: string;
   @Expose()
   deviceName: string;
+  type: string;
   @ApiProperty()
   @Expose()
   secretKey: string;
@@ -32,7 +33,7 @@ export class DevicesDto extends BaseDto {
   @Expose()
   roomId: string;
   @Expose()
-  customer_id: string;
+  ownerId: string;
   @Expose()
   role: 'owner' | 'member';
 }

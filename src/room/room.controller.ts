@@ -8,12 +8,16 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomService } from './room.service';
 import { GetRoomsDto } from './dto/get-rooms.dto';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
+import { ModGuard } from 'src/auth/guards/mod.guard';
 
 @Controller('rooms')
 // @UseGuards(JwtGuard)
@@ -29,6 +33,14 @@ export class RoomController {
   searchRooms(@Query() searchRoomsDto: SearchRoomsDto) {
     return this.roomService.searchRooms(searchRoomsDto);
   }
+  @UseGuards(ModGuard)
+  @Get('submiter')
+  searchRoomsSubmitner(
+    @Query() searchRoomsDto: SearchRoomsDto,
+    @Request() req,
+  ) {
+    return this.roomService.searchRooms(searchRoomsDto, req.user.id);
+  }
   @Get(':id')
   getRoom(@Param('id') id: string) {
     return this.roomService.getRoom(id);
@@ -41,15 +53,6 @@ export class RoomController {
   ) {
     return this.roomService.createRoom(createRoomDto, data.userId);
   }
-
-  // @Put(':id')
-  // updateRoom(
-  //   @Body() data: { userId: string },
-  //   @Param('id', ParseIntPipe) id: string,
-  //   @Body() updateRoomDto: UpdateRoomDto,
-  // ) {
-  //   return this.roomService.updateRoom(id, updateRoomDto, data.userId);
-  // }
 
   @Put(':id')
   updateRoom(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {

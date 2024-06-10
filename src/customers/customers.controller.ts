@@ -50,9 +50,13 @@ export class CustomersController {
     @Body() Dto: DevicesDto,
     @Param('customer_id') customer_id: string,
   ) {
-    return this.customersService.addDevice(Dto, customer_id, 'owner');
+    return this.customersService.addDevice(Dto, customer_id);
   }
 
+  @Get('/device/:customer_id')
+  getAllDevice(@Param('customer_id') customer_id: string) {
+    return this.customersService.getAllDevice(customer_id);
+  }
   @Delete('/device/:customer_id/:deviceId')
   delelteDevice(
     @Param('customer_id') customer_id: string,

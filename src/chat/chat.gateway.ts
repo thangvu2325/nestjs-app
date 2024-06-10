@@ -117,7 +117,6 @@ export class ChatGateway
       this.logger.error(`Thiết bị không tồn tại`);
       return;
     }
-    console.log(message);
     this.io.to(device.room?.id.toString()).emit('message', message);
     this.logger.log(
       `Gửi message đến room ${device.room.id} của thiết bị ${device.deviceId} thành công`,
@@ -136,13 +135,12 @@ export class ChatGateway
 
   @SubscribeMessage('join')
   handleJoin(client: Socket, roomId: string) {
-    console.log(roomId);
+    console.log(`${client.handshake.auth.userId} đang vào ${roomId}`);
     if (roomId) {
-      client.join(roomId.toString());
+      client.join(roomId);
     }
     return roomId;
   }
-
   @SubscribeMessage('leave')
   handleLeave(client: Socket, roomId: string) {
     client.leave(roomId.toString());
@@ -152,28 +150,42 @@ export class ChatGateway
 
   @SubscribeMessage('message')
   async handleMessage(client: Socket, message: string) {
-    const createMessageDto: CreateMessageDto = JSON.parse(message);
-    const text = await this.messageService.createMessage(createMessageDto);
-    client.emit(
-      'message',
-      JSON.stringify({
-        type: 'message',
-        message: text,
-      }),
-    );
-    client.to(createMessageDto.roomId.toString()).emit(
-      'message',
-      JSON.stringify({
-        type: 'message',
-        message: text,
-      }),
-    );
+    try {
+      const createMessageDto: CreateMessageDto = {
+        ...JSON.parse(message),
+        userId: client.handshake.auth.userId,
+      };
+      const text = await this.messageService.createMessage(createMessageDto);
+      this.io.to(createMessageDto.roomId).emit(
+        'message',
+        JSON.stringify({
+          type: 'message',
+          message: text,
+        }),
+      );
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
   }
 
   @SubscribeMessage('isTyping')
-  async handleTypingNotification(client: Socket, roomId: CreateMessageDto) {
-    client
-      .to(roomId.toString())
-      .emit('isTyping', `${client.id} typing message...`);
+  async handleTypingNotification(client: Socket, roomId: string) {
+    const userFound = await this.userRepository.findOne({
+      where: {
+        id: client.handshake.auth.userId,
+      },
+      relations: ['customer'],
+    });
+
+    if (userFound && userFound.customer) {
+      const typingMessage = `${userFound.customer.last_name} ${userFound.customer.first_name} (${userFound.email}) is typing`;
+      client.broadcast.to(roomId).emit(
+        'message',
+        JSON.stringify({
+          type: 'isTyping',
+          message: typingMessage,
+        }),
+      );
+    }
   }
 }

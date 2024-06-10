@@ -28,7 +28,8 @@ export class CustomersEntity extends BaseEntity {
   @Column({ default: null, unique: true })
   @IsPhoneNumber()
   phone: string;
-
+  @OneToMany(() => DevicesEntity, (device) => device.owner)
+  myDevice: DevicesEntity[];
   @Column()
   customer_id: string;
 

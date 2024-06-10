@@ -41,16 +41,21 @@ export class RoomService {
       };
     });
   }
-
   async getRoom(id: string) {
     const room = await this.roomRepository.findOne({
       where: { id },
-      relations: ['owner', 'messages', 'messages.owner', 'owner.customer'],
+      relations: [
+        'owner',
+        'messages',
+        'messages.owner',
+        'owner.customer',
+        'submiter',
+      ],
     });
     return {
       ...room,
       owner: room.owner ? room.owner.customer.customer_id : null,
-      submiter: room?.submiter ? room?.submiter.email : null,
+      submiter: room?.submiter ? room?.submiter.id : null,
       messages: room?.messages?.sort((a, b) => {
         return (
           new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
@@ -59,11 +64,15 @@ export class RoomService {
     };
   }
 
-  async searchRooms(searchRoomsDto: SearchRoomsDto) {
+  async searchRooms(searchRoomsDto: SearchRoomsDto, submiter?: string) {
     const qb = this.roomRepository
       .createQueryBuilder('rooms')
-      .leftJoinAndSelect('rooms.owner', 'owner')
-      .leftJoinAndSelect('owner.customer', 'customer');
+      .leftJoinAndSelect('rooms.owner', 'roomOwner') // Renamed to 'roomOwner'
+      .leftJoinAndSelect('rooms.messages', 'messages')
+      .leftJoinAndSelect('messages.owner', 'messageOwner') // Renamed to 'messageOwner'
+      .leftJoinAndSelect('rooms.submiter', 'submiter')
+      .leftJoinAndSelect('roomOwner.customer', 'customer');
+
     if (searchRoomsDto.skip) {
       qb.skip(searchRoomsDto.skip);
     }
@@ -90,21 +99,50 @@ export class RoomService {
         ownerId: searchRoomsDto.ownerId,
       });
     }
+
     const [items, count] = await qb.getManyAndCount();
+
     return {
-      roomList: items.map((room) => {
-        return {
-          ...room,
-          owner: room.owner ? room.owner.customer.customer_id : null,
-          submiter: room?.submiter ? room?.submiter.email : null,
-          messages: room?.messages?.sort((a, b) => {
-            return (
-              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-            );
-          }),
-        };
-      }),
-      count: count,
+      roomList: searchRoomsDto.ownerId
+        ? (() => {
+            const room = items
+              .filter((room) => room?.status !== 'RESOLVED')
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+            return [
+              {
+                ...room,
+                owner: room?.owner?.customer?.customer_id || null,
+                submiter: room?.submiter?.email || null,
+                messages: room?.messages?.sort((a, b) => {
+                  return (
+                    new Date(a.updatedAt).getTime() -
+                    new Date(b.updatedAt).getTime()
+                  );
+                }),
+              },
+            ];
+          })()
+        : items
+            .filter((room) => {
+              if (submiter) {
+                return room.submiter.id === submiter;
+              }
+              return true;
+            })
+            .map((room) => {
+              return {
+                ...room,
+                owner: room?.owner?.customer?.customer_id || null,
+                submiter: room?.submiter?.id || null,
+                messages: room?.messages?.sort((a, b) => {
+                  return (
+                    new Date(a.updatedAt).getTime() -
+                    new Date(b.updatedAt).getTime()
+                  );
+                }),
+              };
+            }),
+      count: searchRoomsDto.ownerId ? 1 : count,
     };
   }
 
@@ -119,46 +157,77 @@ export class RoomService {
     return room;
   }
   async updateRoom(id: string, updateRoomDto: UpdateRoomDto) {
+    // Find the room by id, including related entities
     const roomFound = await this.roomRepository.findOne({
       where: { id },
       relations: ['owner', 'messages', 'messages.owner', 'owner.customer'],
     });
 
+    // If the room is not found, throw an error
     if (!roomFound) {
       throw new HttpException('Room này không tồn tại!', HttpStatus.FORBIDDEN);
     }
 
     const { submiter, ...props } = updateRoomDto;
 
+    // Update the room properties
+    Object.assign(roomFound, props);
+
+    // Handle submiter update if provided
     if (submiter) {
       const user = await this.usersRepository.findOne({
         where: { id: submiter },
       });
+
       if (!user) {
         throw new HttpException(
           'Người dùng này không tồn tại',
           HttpStatus.FORBIDDEN,
         );
       }
-      roomFound.submiter = user;
-    }
-    const updatedRoom = {
-      ...roomFound,
-      ...props,
-    };
 
-    const roomUpdated = await this.roomRepository.save(updatedRoom);
+      // Update the submiter and their room list
+      roomFound.submiter = user;
+      if (user.roomSubmited) {
+        user.roomSubmited.push(roomFound);
+      } else {
+        user.roomSubmited = [roomFound];
+      }
+    }
+
+    // Handle status update and related submiter cleanup
+    if (props.status && props.status === 'PENDING') {
+      if (roomFound.submiter) {
+        roomFound.submiter.roomSubmited =
+          roomFound.submiter.roomSubmited.filter(
+            (room) => room.id !== roomFound.id,
+          );
+      }
+      roomFound.submiter = null;
+    }
+
+    // Save the updated submiter entity if it exists
+    if (roomFound.submiter) {
+      await this.usersRepository.save(roomFound.submiter);
+    }
+
+    // Save the updated room entity
+    await this.roomRepository.save(roomFound);
+
+    // Sort messages by updatedAt
+    const sortedMessages = roomFound.messages.sort((a, b) => {
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    });
+
+    // Return the updated room details
     return {
-      ...roomUpdated,
-      owner: roomUpdated.owner ? roomUpdated.owner.customer.customer_id : null,
-      submiter: roomUpdated?.submiter ? roomUpdated?.submiter.email : null,
-      messages: roomUpdated?.messages?.sort((a, b) => {
-        return (
-          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-        );
-      }),
+      ...roomFound,
+      owner: roomFound.owner ? roomFound.owner.customer.customer_id : null,
+      submiter: roomFound.submiter ? roomFound.submiter.id : null,
+      messages: sortedMessages,
     };
   }
+
   async deleteRoom(id: string) {
     const result = await this.roomRepository.delete(id);
     if (result.affected === 0) {

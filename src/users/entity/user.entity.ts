@@ -54,6 +54,9 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => ticketsEntity, (ticket) => ticket.owner)
   ticket: ticketsEntity[];
 
+  @OneToMany(() => Room, (room) => room.submiter)
+  roomSubmited: Room[];
+
   @ManyToMany(() => Room, (room) => room.members)
   joinedRooms: Room[];
 }

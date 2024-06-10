@@ -5,7 +5,9 @@ export class SensorsDto extends BaseDto {
   @Expose()
   AlarmSatus: boolean;
   @Expose()
-  SmokeValue: number;
+  blackSmokeVal: number;
+  @Expose()
+  whiteSmokeVal: number;
   @Expose()
   Temperature: number;
   @Expose()

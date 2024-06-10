@@ -66,6 +66,7 @@ export class DevicesService extends MysqlBaseService<
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
       .leftJoinAndSelect('devices.owner', 'owner')
+      .leftJoinAndSelect('owner.myDevice', 'myDevice')
       .leftJoinAndSelect('devices.room', 'room')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
@@ -81,14 +82,7 @@ export class DevicesService extends MysqlBaseService<
     if ('offset' in query) {
       qb.offset(query.offset);
     }
-    let deviceList = await qb.getMany();
-    if (customer_id !== 'all') {
-      deviceList = deviceList.filter((device) => {
-        return device.customers.some((customer) => {
-          return customer.customer_id === customer_id;
-        });
-      });
-    }
+    const deviceList = await qb.getMany();
     const devicesDtoArray = deviceList.map((device) => {
       const historyLast = device?.history?.sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
@@ -117,6 +111,7 @@ export class DevicesService extends MysqlBaseService<
         {
           ...device,
           ...data,
+          ownerId: device.owner?.customer_id,
           roomId: device?.room?.id ?? null,
           active: device.customers.length ? true : false,
           customer_id: device.customers

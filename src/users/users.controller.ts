@@ -35,6 +35,7 @@ export class UsersController {
       excludeExtraneousValues: true,
     });
   }
+
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updateProfile(@Body() update_dto: any, @Param('id') user_id: string) {

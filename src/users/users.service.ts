@@ -66,16 +66,16 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
               excludeExtraneousValues: true,
             })
           : null;
-        const roomNewest = user.rooms
-          .filter((room) => room?.status !== 'RESOLVED')
-          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+        // const roomNewest = user.rooms
+        //   .filter((room) => room?.status !== 'RESOLVED')
+        //   .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
 
         return plainToClass(
           UsersDto,
           {
             ...user,
             customer,
-            room_id: roomNewest ? roomNewest.id : null,
+            // room_id: roomNewest ? roomNewest.id : null,
           },
           { excludeExtraneousValues: true },
         );

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -28,33 +28,48 @@ export class MessageService {
   }
 
   async createMessage(createMessageDto: CreateMessageDto) {
-    const message = await this.messageRepository.save(createMessageDto);
-    const romFound = await this.roomRepository.findOne({
-      where: {
-        id: createMessageDto.roomId,
-      },
-      relations: ['owner', 'messages', 'messages.owner'],
-    });
-    romFound?.messages.push(message);
-    await this.roomRepository.save(romFound);
+    // Bước 1: Lấy user và room trong một lần gọi cơ sở dữ liệu duy nhất
+    const [userFound, roomFound] = await Promise.all([
+      this.userRepository.findOne({
+        where: { id: createMessageDto.userId },
+        relations: ['messages'],
+      }),
+      this.roomRepository.findOne({
+        where: { id: createMessageDto.roomId },
+        relations: ['owner', 'messages', 'messages.owner'],
+      }),
+    ]);
 
-    const userFound = await this.userRepository.findOne({
-      where: {
-        id: createMessageDto.userId,
-      },
-      relations: ['messages'],
+    if (!userFound) {
+      throw new HttpException('User Not Found', HttpStatus.FORBIDDEN);
+    }
+
+    if (!roomFound) {
+      throw new HttpException('Room Not Found', HttpStatus.FORBIDDEN);
+    }
+
+    // Bước 2: Tạo và lưu tin nhắn mới
+    const message = this.messageRepository.create({
+      content: createMessageDto.content,
+      owner: userFound,
+      room: roomFound,
     });
-    userFound?.messages.push(message);
-    await this.userRepository.save(userFound);
-    const messageFound = await this.messageRepository.findOne({
-      where: {
-        id: message.id,
-      },
-      relations: ['owner'],
-    });
+
+    // Thêm tin nhắn vào danh sách tin nhắn của user và room
+    userFound.messages.push(message);
+    roomFound.messages.push(message);
+
+    // Bước 3: Lưu tin nhắn và cập nhật user, room cùng lúc
+    await Promise.all([
+      this.messageRepository.save(message),
+      this.userRepository.save(userFound),
+      this.roomRepository.save(roomFound),
+    ]);
+
+    // Bước 4: Trả về kết quả với dữ liệu chủ sở hữu được chuyển đổi
     return {
-      ...messageFound,
-      owner: plainToInstance(UsersDto, messageFound.owner, {
+      ...message,
+      owner: plainToInstance(UsersDto, userFound, {
         excludeExtraneousValues: true,
       }),
     };
