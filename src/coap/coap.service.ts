@@ -135,7 +135,7 @@ export class CoapService {
               );
               warningUser.status = 'idle';
               clearTimeout(AlarmTimeout);
-            }, 5000);
+            }, 30000);
             return;
           }
           const historyLast = device.history.sort(
