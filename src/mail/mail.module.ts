@@ -12,9 +12,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
       transport: {
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT,
-        tls: {
-          ciphers: 'SSLv3',
-        },
+
         secure: false, // true for 465, false for other ports
         auth: {
           user: process.env.EMAIL_ID, // generated ethereal user
@@ -22,13 +20,13 @@ import { UserEntity } from 'src/users/entity/user.entity';
         },
       },
       defaults: {
-        from: '"nest-modules" <thangvu1560@gmail.com>', // outgoing email ID
+        from: '"nest-modules" <7688d4002@smtp-brevo.com>', // outgoing email ID
       },
       template: {
         dir: process.cwd() + '/template/',
         adapter: new HandlebarsAdapter(), // or new PugAdapter() or new EjsAdapter()
         options: {
-          strict: true,
+          strict: false,
         },
       },
     }),

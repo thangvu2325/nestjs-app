@@ -94,7 +94,6 @@ export class CustomersController {
   toggleAlarmStatus(
     @Param('customer_id') customer_id: string,
     @Param('deviceId') deviceId: string,
-    @Request() req,
   ): Promise<{
     result: string;
   }> {

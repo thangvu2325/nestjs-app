@@ -5,7 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
 import { CoapService } from './coap/coap.service';
 import { HttpExceptionFilter } from './http-exception.filter';
-import * as helmet from 'helmet';
 
 async function bootstrap() {
   const port = process.env.PORT;
@@ -30,20 +29,6 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   app.useGlobalPipes(new ValidationPipe());
-  app.use(
-    helmet.contentSecurityPolicy({
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'wasm-unsafe-eval'",
-          "'inline-speculation-rules'",
-          "'sha256-1toisMNYvYWodONOyE5++VEBb/6Vr81HRsoNrC+5/qI='",
-        ],
-        // Thêm các chỉ thị khác nếu cần
-      },
-    }),
-  );
   // Enable CORS so we can access the application from a different origin
   app.enableCors({
     origin: '*',

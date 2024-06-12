@@ -37,7 +37,7 @@ export class MailService {
       .sendMail({
         to: email, // List of receivers email address
         subject: 'Reset Mật Khẩu ✔', // Subject line
-        from: 'workflowhub@gmail.com',
+        from: '7688d4002@smtp-brevo.com',
         template: 'index',
         context: {
           // Data to be sent to template engine.
@@ -62,7 +62,7 @@ export class MailService {
       .sendMail({
         to: email, // List of receivers email address
         subject: 'Xác Thực Email ✔', // Subject line
-        from: 'workflowhub@gmail.com',
+        from: '7688d4001@smtp-brevo.com',
         template: 'verifyAccount',
         context: {
           secret_code,
@@ -70,6 +70,7 @@ export class MailService {
         },
       })
       .then((success) => {
+        console.log(process.env.EMAIL_ID);
         console.log(success);
       })
       .catch((err) => {
@@ -81,7 +82,7 @@ export class MailService {
       .sendMail({
         to: email,
         subject: 'Cảnh báo cháy ✔',
-        from: 'workflowhub@gmail.com',
+        from: '7688d4001@smtp-brevo.com',
         template: 'emailWarning',
         context: {},
       })
