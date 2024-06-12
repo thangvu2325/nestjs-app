@@ -113,7 +113,7 @@ export class DevicesService extends MysqlBaseService<
           ...data,
           ownerId: device.owner?.customer_id,
           roomId: device?.room?.id ?? null,
-          active: device.customers.length ? true : false,
+          active: device.owner?.customer_id ? true : false,
           customer_id: device.customers
             .map((cus) => {
               return cus.customer_id;

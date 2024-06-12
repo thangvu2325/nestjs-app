@@ -122,7 +122,9 @@ export class ChatGateway
       `Gửi message đến room ${device.room.id} của thiết bị ${device.deviceId} thành công`,
     );
   }
-
+  firstMessageToRoom(roomId: string, message: string) {
+    this.io.to(roomId.toString()).emit('message', message);
+  }
   sendMessageToClient(clientId: string, message: any, topic: string) {
     const clientSocket = this.io.sockets.sockets.get(clientId);
     if (clientSocket) {

@@ -101,6 +101,7 @@ export class CoapService {
             .leftJoinAndSelect('history.battery', 'battery')
             .leftJoinAndSelect('history.signal', 'signal')
             .leftJoinAndSelect('history.sim', 'sim')
+            .leftJoinAndSelect('devices.owner', 'owner')
             .leftJoinAndSelect('devices.customers', 'customers')
             .where('devices.deviceId = :deviceId', { deviceId })
             .getOne();
@@ -148,6 +149,26 @@ export class CoapService {
             const warningUser = this.sendWarningUserList.find(
               (user) => user.deviceId === deviceId,
             );
+            if (device.owner) {
+              try {
+                const userFound = await this.userReposity.findOne({
+                  where: {
+                    email: device.owner.email,
+                  },
+                });
+                const userDto = plainToInstance(UsersDto, userFound, {
+                  excludeExtraneousValues: true,
+                });
+                await this.mailService.sendEmailWarning(device.owner.email);
+                await this.notificationService.sendPush(
+                  userDto,
+                  'Cảnh báo cháy',
+                  `Phát hiện cháy tại thiết bị ${device.deviceName} có id là ${device.deviceId}`,
+                );
+              } catch (error) {
+                this.logger.warn(error.message);
+              }
+            }
             device.customers.forEach(async (customer) => {
               try {
                 const userFound = await this.userReposity.findOne({

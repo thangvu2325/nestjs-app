@@ -69,14 +69,11 @@ export class CustomersController {
   // @UseGuards(JwtGuard)
   @Put('/device/:customer_id/:deviceId')
   updateDevice(
-    @Param() params: { customer_id: string; deviceId: string },
+    @Param('customer_id') customer_id: string,
+    @Param('deviceId') deviceId: string,
     @Body() dto: DevicesDto,
-  ): Promise<{ result: string }> {
-    return this.customersService.updateDevice(
-      dto,
-      params.customer_id,
-      params.deviceId,
-    );
+  ) {
+    return this.customersService.updateDevice(dto, customer_id, deviceId);
   }
 
   @UseGuards(PublicGuard)
@@ -101,7 +98,6 @@ export class CustomersController {
   ): Promise<{
     result: string;
   }> {
-    console.log(req.user);
     return this.customersService.toggleAlarmStatus(deviceId, customer_id);
   }
 }

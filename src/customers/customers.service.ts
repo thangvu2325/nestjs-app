@@ -112,7 +112,7 @@ export class CustomersService extends MysqlBaseService<
     // Find the customer by ID and load their devices
     const customer = await this.customersReposity.findOne({
       where: { customer_id: customerId },
-      relations: ['devices'],
+      relations: ['devices', 'myDevice'],
     });
 
     // Check if the customer exists
@@ -358,57 +358,61 @@ export class CustomersService extends MysqlBaseService<
     });
     return keyAddDevice;
   }
-  async updateDevice(
-    Dto: DevicesDto,
-    customer_id: string,
-    deviceId: string,
-  ): Promise<{ result: string }> {
+  async updateDevice(Dto: DevicesDto, customer_id: string, deviceId: string) {
+    // Fetch customer along with their devices
     const customerFound = await this.customersReposity
       .createQueryBuilder('customers')
-      .leftJoinAndSelect('customers.devices', 'devices')
-      .where({
-        customer_id,
-      })
+      .leftJoinAndSelect('customers.myDevice', 'myDevice')
+      .where('customers.customer_id = :customer_id', { customer_id })
       .getOne();
+
+    // Check if customer exists
     if (!customerFound) {
-      throw new HttpException(
-        `Không tìm thấy người dùng`,
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException(`Customer not found`, HttpStatus.FORBIDDEN);
     }
-    const deviceFound = customerFound.devices.find(
+
+    // Check if device exists within customer's devices
+    const deviceFound = customerFound.myDevice?.find(
       (device) => device.deviceId === deviceId,
     );
+
     if (!deviceFound) {
       throw new HttpException(
-        `người dùng với ${customer_id} không tìm thấy thiết bị với ${deviceId}`,
+        `Customer with ID ${customer_id} does not have a device with ID ${deviceId}`,
         HttpStatus.FORBIDDEN,
       );
     }
+
     try {
-      await this.devicesReposity.update(deviceFound.id, {
+      // Update the found device with the new data
+      const deviceUpdated = await this.devicesReposity.save({
         ...deviceFound,
         ...Dto,
       });
-      return { result: 'Thành công' };
+
+      // Return the updated device instance
+      return plainToInstance(DevicesDto, deviceUpdated, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
-      return { result: error.message };
+      // Handle errors during the save operation
+      throw new HttpException(error.message, HttpStatus.FORBIDDEN);
     }
   }
   async deleteDevice(
     deviceId: string,
     customerId: string,
   ): Promise<{ result: string }> {
-    // Tìm khách hàng dựa trên customerId
+    // Find the customer by customerId
     const customer = await this.customersReposity.findOne({
       where: { customer_id: customerId },
-      relations: ['devices'],
+      relations: ['devices', 'myDevice'],
     });
 
-    // Tìm thiết bị dựa trên deviceId
+    // Find the device by deviceId
     const device = await this.devicesReposity.findOne({
       where: { deviceId: deviceId },
-      relations: ['customers'],
+      relations: ['customers', 'owner'],
     });
 
     if (!customer) {
@@ -422,24 +426,27 @@ export class CustomersService extends MysqlBaseService<
       throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
     }
 
-    // Lọc thiết bị ra khỏi danh sách thiết bị của khách hàng
+    // Remove the device from the customer's myDevice list
+    customer.myDevice = customer.myDevice.filter(
+      (dev) => dev.deviceId !== deviceId,
+    );
+
+    // Remove the device from the customer's devices list
     customer.devices = customer.devices.filter(
       (dev) => dev.deviceId !== deviceId,
     );
     await this.customersReposity.save(customer);
 
-    // Lọc khách hàng ra khỏi danh sách khách hàng của thiết bị
+    // Remove the customer from the device's owner if they are the owner
+    if (device.owner && device.owner.customer_id === customerId) {
+      device.owner = null;
+    }
+
+    // Remove the customer from the device's customers list
     device.customers = device.customers.filter(
       (cust) => cust.customer_id !== customerId,
     );
     await this.devicesReposity.save(device);
-
-    // Xóa mối quan hệ giữa khách hàng và thiết bị
-    await this.devicesReposity
-      .createQueryBuilder()
-      .relation(DevicesEntity, 'customers')
-      .of(device)
-      .remove(customer);
 
     return { result: 'Thành công' };
   }

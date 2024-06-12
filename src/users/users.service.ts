@@ -75,6 +75,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
           {
             ...user,
             customer,
+            fullName: user.customer.last_name + ' ' + user.customer.first_name,
             // room_id: roomNewest ? roomNewest.id : null,
           },
           { excludeExtraneousValues: true },
@@ -130,6 +131,7 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     const user = await this.userReposity.findOne({
       where: { id: user_id },
     });
+    console.log(update_dto);
     return await this.notificationService.acceptPushNotification(
       user,
       update_dto,

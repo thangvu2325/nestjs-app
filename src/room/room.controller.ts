@@ -8,7 +8,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -39,7 +38,7 @@ export class RoomController {
     @Query() searchRoomsDto: SearchRoomsDto,
     @Request() req,
   ) {
-    return this.roomService.searchRooms(searchRoomsDto, req.user.id);
+    return this.roomService.searchRooms(searchRoomsDto, req['user'].userId);
   }
   @Get(':id')
   getRoom(@Param('id') id: string) {

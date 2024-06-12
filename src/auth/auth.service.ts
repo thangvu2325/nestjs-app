@@ -83,6 +83,7 @@ export class AuthService {
           customer_id: customer?.customer_id ?? '',
           ...user,
           room_id: roomNewest ? roomNewest.id : null,
+          fullName: user.customer.last_name + ' ' + user.customer.first_name,
         },
         { excludeExtraneousValues: true },
       ),

@@ -15,6 +15,7 @@ import { Room } from './room.entity';
 import { plainToInstance } from 'class-transformer';
 import { UsersDto } from 'src/users/users.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
+import { ChatGateway } from 'src/chat/chat.gateway';
 
 @Injectable()
 export class RoomService {
@@ -23,6 +24,7 @@ export class RoomService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    private readonly chatGateWay: ChatGateway,
   ) {}
 
   async getRooms(getRoomsDto: GetRoomsDto) {
@@ -94,54 +96,50 @@ export class RoomService {
         status: searchRoomsDto.status,
       });
     }
-    if (searchRoomsDto.ownerId) {
-      qb.andWhere('rooms.ownerId = :ownerId', {
-        ownerId: searchRoomsDto.ownerId,
-      });
-    }
-
     const [items, count] = await qb.getManyAndCount();
-
     return {
-      roomList: searchRoomsDto.ownerId
-        ? (() => {
-            const room = items
-              .filter((room) => room?.status !== 'RESOLVED')
-              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-            return [
-              {
-                ...room,
-                owner: room?.owner?.customer?.customer_id || null,
-                submiter: room?.submiter?.email || null,
-                messages: room?.messages?.sort((a, b) => {
-                  return (
-                    new Date(a.updatedAt).getTime() -
-                    new Date(b.updatedAt).getTime()
-                  );
-                }),
-              },
-            ];
-          })()
-        : items
-            .filter((room) => {
-              if (submiter) {
-                return room.submiter.id === submiter;
-              }
-              return true;
-            })
-            .map((room) => {
-              return {
-                ...room,
-                owner: room?.owner?.customer?.customer_id || null,
-                submiter: room?.submiter?.id || null,
-                messages: room?.messages?.sort((a, b) => {
-                  return (
-                    new Date(a.updatedAt).getTime() -
-                    new Date(b.updatedAt).getTime()
-                  );
-                }),
-              };
-            }),
+      roomList:
+        searchRoomsDto.ownerId !== undefined
+          ? (() => {
+              const room = items
+                .filter((room) => room?.status !== 'RESOLVED')
+                .sort(
+                  (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+                )[0];
+              return [
+                {
+                  ...room,
+                  owner: room?.owner?.customer?.customer_id || null,
+                  submiter: room?.submiter?.email || null,
+                  messages: room?.messages?.sort((a, b) => {
+                    return (
+                      new Date(a.updatedAt).getTime() -
+                      new Date(b.updatedAt).getTime()
+                    );
+                  }),
+                },
+              ];
+            })()
+          : items
+              .filter((room) => {
+                if (submiter) {
+                  return room?.submiter?.id === submiter;
+                }
+                return true;
+              })
+              .map((room) => {
+                return {
+                  ...room,
+                  owner: room?.owner?.customer?.customer_id || null,
+                  submiter: room?.submiter?.id || null,
+                  messages: room?.messages?.sort((a, b) => {
+                    return (
+                      new Date(a.updatedAt).getTime() -
+                      new Date(b.updatedAt).getTime()
+                    );
+                  }),
+                };
+              }),
       count: searchRoomsDto.ownerId ? 1 : count,
     };
   }
@@ -152,8 +150,27 @@ export class RoomService {
       description: createRoomDto.description,
       owner: { id: userId },
     };
+    const user = await this.usersRepository.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['customer'],
+    });
+    if (!user) {
+      throw new HttpException(
+        'Không tìm thấy người dùng!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const room = this.roomRepository.create(roomPartial);
     await this.roomRepository.save(room);
+    await this.chatGateWay.firstMessageToRoom(
+      room.id,
+      `Xin chào ${
+        user.customer.last_name + ' ' + user.customer.first_name
+      }, Bạn vui lòng đợi trong chút lát, sẽ có người vào hỗ trợ cho bạn`,
+    );
+
     return room;
   }
   async updateRoom(id: string, updateRoomDto: UpdateRoomDto) {
