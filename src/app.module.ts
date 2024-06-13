@@ -68,6 +68,7 @@ import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
           WarningLogsEntity,
           ticketMessageEntity,
           SecretKeyEntity,
+
           KeyAddDeviceEntity,
         ],
         synchronize: true,

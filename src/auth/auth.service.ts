@@ -164,7 +164,10 @@ export class AuthService {
       const { password, ...result } = user;
       return result;
     }
-    throw new UnauthorizedException();
+    throw new HttpException(
+      'Sai thông tin tài khoản hoặc mật khẩu',
+      HttpStatus.FORBIDDEN,
+    );
   }
   async verifyToken(token: string) {
     return await this.jwtService.verify(token, {

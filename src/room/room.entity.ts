@@ -22,7 +22,7 @@ export class Room extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: ['message-suporter', 'message-device'],
+    enum: ['message-suporter', 'message-device', 'message-historyLogger'],
     default: 'message-suporter',
   })
   type: string;

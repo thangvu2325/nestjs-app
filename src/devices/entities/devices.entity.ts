@@ -44,4 +44,8 @@ export class DevicesEntity extends BaseEntity {
   @OneToOne(() => Room)
   @JoinColumn()
   room: Room;
+
+  @OneToOne(() => Room)
+  @JoinColumn()
+  historyLoggerRoom: Room;
 }

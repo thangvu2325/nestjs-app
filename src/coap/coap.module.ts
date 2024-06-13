@@ -40,6 +40,7 @@ import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
       VerifyEntity,
       SimEntity,
       HistoryEntity,
+
       NotificationToken,
       Notifications,
       CustomersEntity,

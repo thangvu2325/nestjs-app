@@ -1,16 +1,6 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { DevicesDto } from './dto/devices.dto';
 import { DevicesService } from './devices.service';
-import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { HistoryService } from './history.service';
 
 @Controller('devices')
@@ -20,11 +10,12 @@ export class DevicesController {
     private readonly historyService: HistoryService,
   ) {}
   @Get()
-  getAllDevice(@Query('customer_id') customer_id: string): Promise<{
-    devices: Array<DevicesDto>;
-    devicesCount: number;
-  }> {
+  getAllDevice(@Query('customer_id') customer_id: string) {
     return this.devicessService.findAll({}, customer_id);
+  }
+  @Get(':deviceId')
+  getDeviceById(@Param('deviceId') deviceId: string) {
+    return this.devicessService.GetDeviceById(deviceId);
   }
   @Post('')
   createDevice(@Body() Dto: DevicesDto) {

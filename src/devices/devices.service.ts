@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
@@ -58,16 +58,14 @@ export class DevicesService extends MysqlBaseService<
     return uniqueId;
   }
 
-  async findAll(
-    query,
-    customer_id: string = 'all',
-  ): Promise<{ devices: Array<DevicesDto>; devicesCount: number }> {
+  async findAll(query, customer_id: string = 'all') {
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
       .leftJoinAndSelect('devices.owner', 'owner')
       .leftJoinAndSelect('owner.myDevice', 'myDevice')
       .leftJoinAndSelect('devices.room', 'room')
+      .leftJoinAndSelect('devices.historyLoggerRoom', 'historyLoggerRoom')
       .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('history.signal', 'signal')
@@ -113,6 +111,7 @@ export class DevicesService extends MysqlBaseService<
           ...data,
           ownerId: device.owner?.customer_id,
           roomId: device?.room?.id ?? null,
+          roomHistoryLoggerId: device?.historyLoggerRoom?.id ?? null,
           active: device.owner?.customer_id ? true : false,
           customer_id: device.customers
             .map((cus) => {
@@ -152,11 +151,15 @@ export class DevicesService extends MysqlBaseService<
         description: `Room này để nhận dữ liệu`,
         type: `message-device`,
       });
-
+      const roomHistoryLogger = await this.roomReposity.save({
+        title: `Room của thiết bị ${devices.deviceId}`,
+        description: `Room này để nhận dữ liệu`,
+        type: `message-historyLogger`,
+      });
       // Associate room with the device and update the device entry
       devices.room = room;
+      devices.historyLoggerRoom = roomHistoryLogger;
       const device = await this.devicesReposity.save(devices);
-
       return plainToInstance(DevicesDto, device, {
         excludeExtraneousValues: true,
       });
@@ -176,8 +179,25 @@ export class DevicesService extends MysqlBaseService<
       relations: ['room'],
     });
     deviceFound.room = roomFound;
-
     await this.devicesReposity.save(deviceFound);
     return { result: 'thành công' };
+  }
+  async GetDeviceById(deviceId: string) {
+    const deviceFound = await this.devicesReposity.findOne({
+      where: { deviceId },
+      relations: ['room', 'historyLoggerRoom'],
+    });
+    if (!deviceFound) {
+      throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
+    }
+    return plainToInstance(
+      DevicesDto,
+      {
+        ...deviceFound,
+        roomId: deviceFound?.room?.id ?? null,
+        roomHistoryLoggerId: deviceFound?.historyLoggerRoom?.id ?? null,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
@@ -16,6 +16,7 @@ import { SignalDto } from './dto/signal.dto';
 import { HistoryEntity } from './entities/history.entity';
 import { HistoryDto } from './dto/history.dto';
 import { DevicesDto } from './dto/devices.dto';
+import { HistoryLoggerDto } from './dto/historyLogger.dto';
 
 @Injectable()
 export class HistoryService extends MysqlBaseService<
@@ -183,5 +184,35 @@ export class HistoryService extends MysqlBaseService<
     const result: Array<{ requestCount: number; time: Date }> =
       Object.values(groupedByDate);
     return result;
+  }
+
+  async GetHistoryLogger(
+    deviceId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _query?: {
+      take?: string;
+      skip?: string;
+    },
+  ) {
+    const deviceFound = await this.deviceRepository.findOne({
+      where: {
+        deviceId,
+      },
+      relations: ['history'],
+    });
+    if (!deviceFound) {
+      throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
+    }
+    return deviceFound.history
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((his) => {
+        return plainToInstance(HistoryLoggerDto, {
+          historyId: his.id,
+          createdAt: his.createdAt,
+          updatedAt: his.updatedAt,
+          deletedAt: his.deletedAt,
+          logger: his.logger,
+        });
+      });
   }
 }

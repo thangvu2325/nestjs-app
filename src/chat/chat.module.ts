@@ -16,6 +16,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MessageService } from 'src/message/message.service';
 import { Message } from 'src/message/message.entity';
 import { Room } from 'src/room/room.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -26,6 +27,7 @@ import { Room } from 'src/room/room.entity';
       SimEntity,
       HistoryEntity,
       CustomersEntity,
+
       UserEntity,
       Message,
       Room,

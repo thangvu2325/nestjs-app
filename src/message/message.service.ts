@@ -39,7 +39,6 @@ export class MessageService {
         relations: ['owner', 'messages', 'messages.owner'],
       }),
     ]);
-
     if (!userFound) {
       throw new HttpException('User Not Found', HttpStatus.FORBIDDEN);
     }

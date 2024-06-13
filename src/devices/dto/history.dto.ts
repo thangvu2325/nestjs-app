@@ -16,4 +16,6 @@ export class HistoryDto extends BaseDto {
   signal: SignalDto;
   @Expose()
   sim: SimDto;
+  @Expose()
+  logger: string;
 }

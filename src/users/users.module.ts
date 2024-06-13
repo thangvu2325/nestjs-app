@@ -39,6 +39,7 @@ import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
       SimEntity,
       VerifyEntity,
       HistoryEntity,
+
       Notifications,
       NotificationToken,
       WarningLogsEntity,

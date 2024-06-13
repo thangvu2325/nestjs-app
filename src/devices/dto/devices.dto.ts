@@ -33,6 +33,8 @@ export class DevicesDto extends BaseDto {
   @Expose()
   roomId: string;
   @Expose()
+  roomHistoryLoggerId: string;
+  @Expose()
   ownerId: string;
   @Expose()
   role: 'owner' | 'member';

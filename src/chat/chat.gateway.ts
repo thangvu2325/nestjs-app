@@ -122,6 +122,24 @@ export class ChatGateway
       `Gửi message đến room ${device.room.id} của thiết bị ${device.deviceId} thành công`,
     );
   }
+  async sendLoggerDataToRoom(deviceId: string, message: any) {
+    const device = await this.deviceRepository.findOne({
+      where: {
+        deviceId,
+      },
+      relations: ['historyLoggerRoom'],
+    });
+    if (!device) {
+      this.logger.error(`Thiết bị không tồn tại`);
+      return;
+    }
+    this.io.to(device.historyLoggerRoom.id.toString()).emit('message', message);
+    this.logger.log(
+      `Gửi message đến room ${device.historyLoggerRoom.id.toString()} của thiết bị ${
+        device.deviceId
+      } thành công`,
+    );
+  }
   firstMessageToRoom(roomId: string, message: string) {
     this.io.to(roomId.toString()).emit('message', message);
   }

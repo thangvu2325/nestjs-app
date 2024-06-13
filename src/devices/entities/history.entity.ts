@@ -1,4 +1,4 @@
-import { Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { SensorsEntity } from './sensors.entity';
 import { BatteryEntity } from './battery.entity';
@@ -24,4 +24,6 @@ export class HistoryEntity extends BaseEntity {
   @OneToOne(() => SimEntity)
   @JoinColumn()
   sim: SimEntity;
+  @Column({ type: 'text' })
+  logger: string;
 }

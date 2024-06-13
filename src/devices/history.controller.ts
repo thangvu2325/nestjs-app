@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { HistoryService } from './history.service';
 import { HistoryDto } from './dto/history.dto';
@@ -25,6 +25,17 @@ export class HistoryController {
     historyCount: number;
   }> {
     return this.historyService.Get(query);
+  }
+  @Get('logger/:deviceId')
+  getAllHistoryLoggerDevice(
+    @Param('deviceId') deviceId: string,
+    @Query('take') take: string,
+    @Query('take') skip: string,
+  ) {
+    return this.historyService.GetHistoryLogger(deviceId, {
+      take,
+      skip,
+    });
   }
   @Get('request')
   getAllRequest(

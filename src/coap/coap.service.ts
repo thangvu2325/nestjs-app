@@ -114,6 +114,11 @@ export class CoapService {
           if (device.AlarmReport === 0) {
             setTimeout(async () => {
               device.AlarmReport = 1;
+              const historyLast = device.history.sort(
+                (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+              )[0];
+              historyLast.sensors.AlarmSatus = false;
+              await this.historyRepository.save(historyLast);
               await this.devicesReposity.save(device);
               await this.chatGateWay.sendDeviceDataToRoom(
                 device.deviceId,
@@ -121,10 +126,12 @@ export class CoapService {
                   type: 'device',
                   message: {
                     deviceId: device?.deviceId,
-                    ...device?.history?.sort(
-                      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-                    )[0],
-                    AlarmReport: 0,
+                    ...historyLast, // Assuming historyLast is an object containing relevant data
+                    sensors: {
+                      ...historyLast.sensors, // Spread previous sensors properties
+                      alarmStatus: false, // Add or overwrite alarmStatus property
+                    },
+                    AlarmReport: 1,
                   },
                 }),
               );
@@ -136,7 +143,7 @@ export class CoapService {
               );
               warningUser.status = 'idle';
               clearTimeout(AlarmTimeout);
-            }, 30000);
+            }, 15000);
             return;
           }
           const historyLast = device.history.sort(
@@ -279,7 +286,6 @@ export class CoapService {
           const device: DevicesDto = {} as DevicesDto;
           const history: HistoryDto = {} as HistoryDto;
           this.logger.log(payload);
-          console.log(req.method);
           switch (req.method) {
             case 'POST':
               if (!isJSON(payload)) {
@@ -338,8 +344,6 @@ export class CoapService {
                 res.end(`Device not found with id: ${device.deviceId}`);
                 break;
               }
-
-              // // // Save changes to the database
               try {
                 const sensorsHistory = await this.sensorsReposity.save({
                   ...history?.sensors,
@@ -359,6 +363,7 @@ export class CoapService {
                   battery: batteryHistory,
                   sim: simHistory,
                   signal: signalHistory,
+                  logger: payload,
                 } as HistoryEntity);
                 deviceFound.history.push(historyDevice);
                 if (history?.sensors?.AlarmSatus) {
@@ -371,7 +376,6 @@ export class CoapService {
                 } else {
                   await this.devicesReposity.save(deviceFound);
                 }
-
                 await this.chatGateWay.sendDeviceDataToRoom(
                   device.deviceId,
                   JSON.stringify({
@@ -381,6 +385,19 @@ export class CoapService {
                       ...deviceFound?.history?.sort(
                         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
                       )[0],
+                    },
+                  }),
+                );
+                await this.chatGateWay.sendLoggerDataToRoom(
+                  device.deviceId,
+                  JSON.stringify({
+                    type: 'historyLogger',
+                    message: {
+                      historyId: historyDevice.id,
+                      createdAt: historyDevice.createdAt,
+                      updatedAt: historyDevice.updatedAt,
+                      deletedAt: historyDevice.deletedAt,
+                      logger: historyDevice.logger,
                     },
                   }),
                 );

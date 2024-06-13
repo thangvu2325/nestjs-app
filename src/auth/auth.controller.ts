@@ -77,7 +77,6 @@ export class AuthController {
   @UseGuards(PublicGuard)
   @Post('logout')
   async logout(@Body() user: UsersDto): Promise<{ result: string }> {
-    console.log(1);
     return await this.authService.logout(user.id);
   }
 
