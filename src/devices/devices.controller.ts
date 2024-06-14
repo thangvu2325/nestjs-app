@@ -28,4 +28,9 @@ export class DevicesController {
   ): Promise<{ result: string }> {
     return this.devicessService.updateDevice(roomId, deviceId);
   }
+
+  @Get('/secret/updateHistoryRoom')
+  updateHistoryRoom() {
+    return this.devicessService.updateHistoryRoom();
+  }
 }

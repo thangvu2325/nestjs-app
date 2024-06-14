@@ -200,4 +200,68 @@ export class DevicesService extends MysqlBaseService<
       { excludeExtraneousValues: true },
     );
   }
+  async updateHistoryRoom() {
+    const qb = await this.devicesReposity
+      .createQueryBuilder('devices')
+      .leftJoinAndSelect('devices.history', 'history')
+      .leftJoinAndSelect('devices.owner', 'owner')
+      .leftJoinAndSelect('owner.myDevice', 'myDevice')
+      .leftJoinAndSelect('devices.room', 'room')
+      .leftJoinAndSelect('devices.historyLoggerRoom', 'historyLoggerRoom')
+      .leftJoinAndSelect('history.sensors', 'sensors')
+      .leftJoinAndSelect('history.battery', 'battery')
+      .leftJoinAndSelect('history.signal', 'signal')
+      .leftJoinAndSelect('history.sim', 'sim')
+      .leftJoinAndSelect('devices.customers', 'customers');
+    qb.where('1 = 1');
+
+    const deviceList = await qb.getMany();
+    const devicesDtoArray = deviceList.map(async (device) => {
+      if (device.historyLoggerRoom) {
+        const roomHistoryLogger = await this.roomReposity.save({
+          title: `Room của thiết bị ${device.deviceId}`,
+          description: `Room này để nhận dữ liệu`,
+          type: `message-historyLogger`,
+        });
+        device.historyLoggerRoom = roomHistoryLogger;
+        device = await this.devicesReposity.save(device);
+      }
+      const historyLast = device?.history?.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      )[0];
+      let data = {} as HistoryDto;
+      if (historyLast) {
+        data = {
+          sensors: plainToInstance(SensorsDto, historyLast.sensors, {
+            excludeExtraneousValues: true,
+          }),
+          battery: plainToInstance(BatteryDto, historyLast.battery, {
+            excludeExtraneousValues: true,
+          }),
+          sim: plainToInstance(SimDto, historyLast.sim, {
+            excludeExtraneousValues: true,
+          }),
+          signal: plainToInstance(SignalDto, {
+            ...historyLast.signal,
+          }),
+        } as HistoryDto;
+      } else {
+        data = {} as HistoryDto;
+      }
+      return plainToClass(
+        DevicesDto,
+        {
+          ...device,
+          ...data,
+          ownerId: device.owner?.customer_id,
+          roomId: device?.room?.id ?? null,
+          roomHistoryLoggerId: device?.historyLoggerRoom?.id ?? null,
+          active: device.owner?.customer_id ? true : false,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
+
+    return { devices: devicesDtoArray, devicesCount: devicesDtoArray.length };
+  }
 }
