@@ -217,15 +217,13 @@ export class DevicesService extends MysqlBaseService<
 
     const deviceList = await qb.getMany();
     const devicesDtoArray = deviceList.map(async (device) => {
-      if (device.historyLoggerRoom) {
-        const roomHistoryLogger = await this.roomReposity.save({
-          title: `Room của thiết bị ${device.deviceId}`,
-          description: `Room này để nhận dữ liệu`,
-          type: `message-historyLogger`,
-        });
-        device.historyLoggerRoom = roomHistoryLogger;
-        device = await this.devicesReposity.save(device);
-      }
+      const roomHistoryLogger = await this.roomReposity.save({
+        title: `Room của thiết bị ${device.deviceId}`,
+        description: `Room này để nhận dữ liệu`,
+        type: `message-historyLogger`,
+      });
+      device.historyLoggerRoom = roomHistoryLogger;
+      device = await this.devicesReposity.save(device);
       const historyLast = device?.history?.sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
       )[0];
