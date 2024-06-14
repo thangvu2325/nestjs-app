@@ -129,7 +129,7 @@ export class CoapService {
                     ...historyLast, // Assuming historyLast is an object containing relevant data
                     sensors: {
                       ...historyLast.sensors, // Spread previous sensors properties
-                      alarmStatus: false, // Add or overwrite alarmStatus property
+                      AlarmSatus: false, // Add or overwrite alarmStatus property
                     },
                     AlarmReport: 1,
                   },
