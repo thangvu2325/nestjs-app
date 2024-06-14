@@ -205,6 +205,7 @@ export class HistoryService extends MysqlBaseService<
     }
     return deviceFound.history
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .filter((his) => his.logger)
       .map((his) => {
         return plainToInstance(HistoryLoggerDto, {
           historyId: his.id,
