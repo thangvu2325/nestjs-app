@@ -86,61 +86,62 @@ export class RoomService {
         title: `%${searchRoomsDto.title}%`,
       });
     }
-    if (searchRoomsDto.type) {
-      qb.andWhere('rooms.type = :type', {
-        type: searchRoomsDto.type,
-      });
-    }
     if (searchRoomsDto.status) {
       qb.andWhere('rooms.status = :status', {
         status: searchRoomsDto.status,
       });
     }
-    const [items, count] = await qb.getManyAndCount();
+    const items = await qb.getMany();
+    const result =
+      searchRoomsDto.ownerId !== undefined
+        ? (() => {
+            const room = items
+              .filter(
+                (room) =>
+                  room?.status !== 'RESOLVED' &&
+                  room.type === 'message-suporter',
+              )
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+            return [
+              {
+                ...room,
+                owner: room?.owner?.customer?.customer_id || null,
+                submiter: room?.submiter?.email || null,
+                messages: room?.messages?.sort((a, b) => {
+                  return (
+                    new Date(a.updatedAt).getTime() -
+                    new Date(b.updatedAt).getTime()
+                  );
+                }),
+              },
+            ];
+          })()
+        : items
+            .filter((room) => {
+              if (submiter) {
+                return (
+                  room?.submiter?.id === submiter &&
+                  room.type === 'message-suporter'
+                );
+              }
+              return room.type === 'message-suporter';
+            })
+            .map((room) => {
+              return {
+                ...room,
+                owner: room?.owner?.customer?.customer_id || null,
+                submiter: room?.submiter?.id || null,
+                messages: room?.messages?.sort((a, b) => {
+                  return (
+                    new Date(a.updatedAt).getTime() -
+                    new Date(b.updatedAt).getTime()
+                  );
+                }),
+              };
+            });
     return {
-      roomList:
-        searchRoomsDto.ownerId !== undefined
-          ? (() => {
-              const room = items
-                .filter((room) => room?.status !== 'RESOLVED')
-                .sort(
-                  (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-                )[0];
-              return [
-                {
-                  ...room,
-                  owner: room?.owner?.customer?.customer_id || null,
-                  submiter: room?.submiter?.email || null,
-                  messages: room?.messages?.sort((a, b) => {
-                    return (
-                      new Date(a.updatedAt).getTime() -
-                      new Date(b.updatedAt).getTime()
-                    );
-                  }),
-                },
-              ];
-            })()
-          : items
-              .filter((room) => {
-                if (submiter) {
-                  return room?.submiter?.id === submiter;
-                }
-                return true;
-              })
-              .map((room) => {
-                return {
-                  ...room,
-                  owner: room?.owner?.customer?.customer_id || null,
-                  submiter: room?.submiter?.id || null,
-                  messages: room?.messages?.sort((a, b) => {
-                    return (
-                      new Date(a.updatedAt).getTime() -
-                      new Date(b.updatedAt).getTime()
-                    );
-                  }),
-                };
-              }),
-      count: searchRoomsDto.ownerId ? 1 : count,
+      roomList: result,
+      count: result.length,
     };
   }
 

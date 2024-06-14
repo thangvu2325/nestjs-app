@@ -16,6 +16,7 @@ import { UserEntity } from 'src/users/entity/user.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { CreateMessageDto } from 'src/message/dto/create-message.dto';
 import { MessageService } from 'src/message/message.service';
+import { Room } from 'src/room/room.entity';
 
 @WebSocketGateway(55555, { cors: true })
 export class ChatGateway
@@ -27,6 +28,8 @@ export class ChatGateway
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly deviceRepository: Repository<DevicesEntity>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
     private readonly messageService: MessageService,
   ) {}
 
@@ -187,7 +190,34 @@ export class ChatGateway
       console.error('Error handling message:', error);
     }
   }
-
+  @SubscribeMessage('handleRoom')
+  async handleRoomChangeStatus(client: Socket, roomId) {
+    const room = await this.roomRepository
+      .createQueryBuilder('rooms')
+      .leftJoinAndSelect('rooms.owner', 'roomOwner') // Renamed to 'roomOwner'
+      .leftJoinAndSelect('rooms.messages', 'messages')
+      .leftJoinAndSelect('messages.owner', 'messageOwner') // Renamed to 'messageOwner'
+      .leftJoinAndSelect('rooms.submiter', 'submiter')
+      .leftJoinAndSelect('roomOwner.customer', 'customer')
+      .where('rooms.id = :roomId', { roomId }) // Use 'rooms.id' to specify the alias
+      .getOne(); // Assuming you want a single result
+    client.broadcast.to(roomId).emit(
+      'message',
+      JSON.stringify({
+        type: 'handleRoom',
+        message: JSON.stringify({
+          ...room,
+          owner: room?.owner?.customer?.customer_id || null,
+          submiter: room?.submiter?.id || null,
+          messages: room?.messages?.sort((a, b) => {
+            return (
+              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+            );
+          }),
+        }),
+      }),
+    );
+  }
   @SubscribeMessage('isTyping')
   async handleTypingNotification(client: Socket, roomId: string) {
     const userFound = await this.userRepository.findOne({
