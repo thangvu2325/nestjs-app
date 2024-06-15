@@ -44,7 +44,6 @@ export class ChatGateway
     const userId = client.handshake.auth.userId;
     const { sockets } = this.io.sockets;
     client.setMaxListeners(20);
-    console.log(token, userId);
     if (!token || !userId) {
       client.disconnect();
       return;

@@ -41,9 +41,8 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
     const qb = await this.userReposity
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.customer', 'customers')
-      .leftJoinAndSelect('user.rooms', 'rooms');
-
-    qb.where('1 = 1');
+      .leftJoinAndSelect('user.rooms', 'rooms')
+      .where('user.role = :role', { role: 'User' });
 
     qb.orderBy('user.createdAt', 'DESC'); // Corrected the alias to 'posts'
 
