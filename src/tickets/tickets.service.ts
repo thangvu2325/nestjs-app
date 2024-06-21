@@ -160,9 +160,52 @@ export class TicketsService {
       ...ticketFound,
       ...props,
     };
-    console.log(ticketFound);
     const ticketUpdated = await this.ticketsRepository.save(updatedTicket);
-    console.log(ticketUpdated);
+    return plainToInstance(
+      TicketDto,
+      {
+        ...ticketUpdated,
+        customer_Id: ticketUpdated?.owner?.customer?.customer_id,
+        submiter: ticketUpdated.submiter ? ticketUpdated.submiter.email : null,
+        message: ticketUpdated.reply ? ticketUpdated.reply.message : null,
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+  async getOldestTicket(userId: string) {
+    const [ticket, userFound] = await Promise.all([
+      this.ticketsRepository.findOne({
+        order: {
+          createdAt: 'ASC',
+        },
+        where: {
+          status: 'PENDING',
+        },
+        relations: ['reply', 'submiter'],
+      }),
+      this.usersRepository.findOne({
+        where: {
+          id: userId,
+        },
+      }),
+    ]);
+
+    if (!ticket) {
+      throw new HttpException(
+        'Hiện tại không có ticket nào',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (!userFound) {
+      throw new HttpException('Người dùng không tồn tại', HttpStatus.FORBIDDEN);
+    }
+
+    ticket.status = 'IN PROGRESS';
+    ticket.submiter = userFound;
+    if (!userFound.ticketListSubmit) {
+      userFound.ticketListSubmit = [];
+    }
+    const ticketUpdated = await this.ticketsRepository.save(ticket);
     return plainToInstance(
       TicketDto,
       {

@@ -3,14 +3,16 @@ services:
   my-sql:
     image: mysql:8.0
     ports:
-      - '3309:3306'
+      - '29030:3306'
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: thangvu
       MYSQL_USER: thangvu2325
       MYSQL_PASSWORD: thangvu2325
+      MYSQL_ROOT_HOST: '%' 
+      TZ: Asia/Ho_Chi_Minh
     volumes:
-      - ./data/mysql:/var/lib/nestjsApp
+      - my-sql-data:/var/lib/mysql
   cache:
     image: redis:6.2-alpine
     restart: always
@@ -18,4 +20,7 @@ services:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
-      - ./data/cache:/var/lib/nestjsApp
+      - redis-data:/var/lib/redis
+volumes:
+  my-sql-data:
+  redis-data:

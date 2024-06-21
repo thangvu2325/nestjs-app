@@ -9,6 +9,7 @@ import { CustomersEntity } from 'src/customers/customers.entity';
 import { SensorsEntity } from './entities/sensors.entity';
 import { SignalEntity } from './entities/signal.entity';
 import { BatteryEntity } from './entities/battery.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { SimEntity } from './entities/sim.entity';
 import * as bcrypt from 'bcrypt';
 import { SensorsDto } from './dto/sensors.dto';
@@ -44,6 +45,49 @@ export class DevicesService extends MysqlBaseService<
   ) {
     super(devicesReposity, DevicesDto);
   }
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async handleCron() {
+    try {
+      const entities = await this.devicesReposity
+        .createQueryBuilder('devices')
+        .leftJoinAndSelect('devices.history', 'history')
+        .leftJoinAndSelect('history.sensors', 'sensors')
+        .getMany();
+
+      const filteredEntities = entities.filter((device) => {
+        const historyLast = device?.history?.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+        )[0];
+
+        if (historyLast) {
+          return !device.AlarmReport || historyLast.sensors.AlarmSatus;
+        }
+        return !device.AlarmReport;
+      });
+
+      for (const entity of filteredEntities) {
+        const timeDiff =
+          (new Date().getTime() - new Date(entity.createdAt).getTime()) / 1000;
+        if (timeDiff >= 30) {
+          const historyLast = entity?.history?.sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          )[0];
+
+          if (historyLast && historyLast.sensors.AlarmSatus) {
+            historyLast.sensors.AlarmSatus = false;
+            await this.sensorsReposity.save(historyLast.sensors);
+          }
+          entity.AlarmReport = 1;
+          await this.devicesReposity.save(entity);
+
+          console.log(`Updated entity with id ${entity.id}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleCron:', error);
+    }
+  }
+
   generateUniqueId(): string {
     const characters =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

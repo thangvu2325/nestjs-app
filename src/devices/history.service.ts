@@ -17,7 +17,7 @@ import { HistoryEntity } from './entities/history.entity';
 import { HistoryDto } from './dto/history.dto';
 import { DevicesDto } from './dto/devices.dto';
 import { HistoryLoggerDto } from './dto/historyLogger.dto';
-
+import { addHours, subDays } from 'date-fns';
 @Injectable()
 export class HistoryService extends MysqlBaseService<
   HistoryEntity,
@@ -41,7 +41,9 @@ export class HistoryService extends MysqlBaseService<
   ) {
     super(historyRepository, HistoryDto);
   }
-
+  convertToHoChiMinhTime(date: Date): Date {
+    return addHours(date, 7);
+  }
   async Get(query: {
     customer_id?: string;
     deviceId?: string;
@@ -131,15 +133,11 @@ export class HistoryService extends MysqlBaseService<
     endDate?: string;
   }): Promise<Array<{ requestCount: number; time: Date }>> {
     const startDate = query.startDate
-      ? new Date(query.startDate)
-      : new Date(new Date().setDate(new Date().getDate() - 10));
-    const endDate = query.endDate ? new Date(query.endDate) : new Date();
-    if (
-      (startDate && isNaN(startDate.getTime())) ||
-      (endDate && isNaN(endDate.getTime()))
-    ) {
-      throw new Error('Invalid date format');
-    }
+      ? this.convertToHoChiMinhTime(new Date(query.startDate))
+      : subDays(this.convertToHoChiMinhTime(new Date()), 10); // Ngày trước đó 10 ngày tính từ ngày hôm nay
+    const endDate = query.endDate
+      ? this.convertToHoChiMinhTime(new Date(query.endDate))
+      : this.convertToHoChiMinhTime(new Date()); // Ngày hiện tại
     const qb = await this.historyRepository
       .createQueryBuilder('history')
       .leftJoinAndSelect('history.device', 'devices')
@@ -169,10 +167,15 @@ export class HistoryService extends MysqlBaseService<
 
     const groupedByDate = historyDtoArray.reduce((acc, curr) => {
       // Lấy ngày tháng năm từ createAt và tạo thành chuỗi để sử dụng làm key
-      const dateKey = curr.createdAt.toISOString().split('T')[0];
+      const dateKey = this.convertToHoChiMinhTime(new Date(curr.createdAt))
+        .toISOString()
+        .split('T')[0];
       // Nếu chưa tồn tại key này trong accumulator, thêm vào với giá trị ban đầu
       if (!acc[dateKey]) {
-        acc[dateKey] = { time: new Date(dateKey), RequestCount: 0 };
+        acc[dateKey] = {
+          time: this.convertToHoChiMinhTime(new Date(curr.createdAt)),
+          RequestCount: 0,
+        };
       }
 
       // Tăng RequestCount cho ngày tương ứng

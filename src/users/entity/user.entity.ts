@@ -46,7 +46,8 @@ export class UserEntity extends BaseEntity {
   @OneToOne(() => VerifyEntity)
   @JoinColumn()
   verify: VerifyEntity;
-
+  @OneToMany(() => ticketsEntity, (ticket) => ticket.submiter)
+  ticketListSubmit: ticketsEntity[];
   @OneToMany(() => Message, (message) => message.owner)
   messages: Message[];
   @OneToMany(() => Room, (room) => room.owner)

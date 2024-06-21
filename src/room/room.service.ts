@@ -245,7 +245,55 @@ export class RoomService {
       messages: sortedMessages,
     };
   }
+  async getOldestRoom(userId: string) {
+    const [room, userFound] = await Promise.all([
+      this.roomRepository.findOne({
+        order: {
+          createdAt: 'ASC',
+        },
+        where: {
+          status: 'PENDING',
+        },
+        relations: [
+          'owner',
+          'messages',
+          'messages.owner',
+          'owner.customer',
+          'submiter',
+        ],
+      }),
+      this.usersRepository.findOne({
+        where: {
+          id: userId,
+        },
+      }),
+    ]);
 
+    if (!room) {
+      throw new HttpException(
+        'Hiện tại không có room nào',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (!userFound) {
+      throw new HttpException('Người dùng không tồn tại', HttpStatus.FORBIDDEN);
+    }
+
+    room.status = 'IN PROGRESS';
+    room.submiter = userFound;
+    const roomUpdated = await this.roomRepository.save(room);
+
+    const sortedMessages = roomUpdated.messages.sort((a, b) => {
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    });
+
+    return {
+      ...roomUpdated,
+      owner: roomUpdated.owner ? roomUpdated.owner.customer.customer_id : null,
+      submiter: roomUpdated.submiter ? roomUpdated.submiter.id : null,
+      messages: sortedMessages,
+    };
+  }
   async deleteRoom(id: string) {
     const result = await this.roomRepository.delete(id);
     if (result.affected === 0) {

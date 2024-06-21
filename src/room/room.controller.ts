@@ -19,7 +19,6 @@ import { SearchRoomsDto } from './dto/search-rooms.dto';
 import { ModGuard } from 'src/auth/guards/mod.guard';
 
 @Controller('rooms')
-// @UseGuards(JwtGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
@@ -39,6 +38,11 @@ export class RoomController {
     @Request() req,
   ) {
     return this.roomService.searchRooms(searchRoomsDto, req['user'].userId);
+  }
+  @UseGuards(ModGuard)
+  @Get('select')
+  async getOldestRoom(@Request() req) {
+    return this.roomService.getOldestRoom(req['user'].userId);
   }
   @Get(':id')
   getRoom(@Param('id') id: string) {

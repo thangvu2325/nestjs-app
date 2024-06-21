@@ -35,9 +35,11 @@ import { TicketModule } from './tickets/tickets.module';
 import { ticketsEntity } from './tickets/entity/tickets.entity';
 import { ticketMessageEntity } from './tickets/entity/ticket-message.entity';
 import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -68,7 +70,6 @@ import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
           WarningLogsEntity,
           ticketMessageEntity,
           SecretKeyEntity,
-
           KeyAddDeviceEntity,
         ],
         synchronize: true,

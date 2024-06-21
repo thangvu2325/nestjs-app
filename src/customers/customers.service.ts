@@ -38,13 +38,12 @@ export class CustomersService extends MysqlBaseService<
   async findAll(
     query,
   ): Promise<{ customers: Array<CustomersDto>; customersCount: number }> {
-    const qb = await this.customersReposity
-      .createQueryBuilder('customers')
-      .leftJoinAndSelect('customers.devices', 'devices')
-      .where('1= 1');
-
-    qb.orderBy('customers.createdAt', 'DESC'); // Corrected the alias to 'posts'
-    const customersCount = await qb.getCount();
+    const qb = await this.usersReposity
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.customer', 'customer')
+      .leftJoinAndSelect('customer.devices', 'devices')
+      .where('1=1');
+    qb.orderBy('user.createdAt', 'DESC'); // Corrected the alias to 'posts'
     if ('limit' in query) {
       qb.limit(query.limit);
     }
@@ -52,30 +51,27 @@ export class CustomersService extends MysqlBaseService<
     if ('offset' in query) {
       qb.offset(query.offset);
     }
-    const customerList = await qb.getMany();
-    const customersDtoArray = customerList.map((customer) => {
-      return plainToClass(
-        CustomersDto,
-        {
-          ...{
-            ...customer,
-            fullName: customer.last_name + customer.first_name,
-          },
-          devices: customer.devices.map((device) => {
-            return plainToClass(
-              DevicesDto,
-              {
-                ...device,
-              },
-              { excludeExtraneousValues: true },
-            );
-          }),
-        },
-        { excludeExtraneousValues: true },
-      );
-    });
+    const userList = await qb.getMany();
 
-    return { customers: customersDtoArray, customersCount };
+    const customersDtoArray = userList
+      .filter((user) => user.role === 'User')
+      .map((user) => {
+        return plainToClass(
+          CustomersDto,
+          {
+            ...{
+              ...user.customer,
+              fullName: user.customer.last_name + user.customer.first_name,
+            },
+          },
+          { excludeExtraneousValues: true },
+        );
+      });
+
+    return {
+      customers: customersDtoArray,
+      customersCount: customersDtoArray.length,
+    };
   }
   async saveCustomer(
     userId: string,

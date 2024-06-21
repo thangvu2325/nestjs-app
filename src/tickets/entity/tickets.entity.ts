@@ -18,7 +18,7 @@ export class ticketsEntity extends BaseEntity {
   priority: string;
   @ManyToOne(() => UserEntity, (user) => user.ticket)
   owner: UserEntity;
-  @OneToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, (user) => user.ticketListSubmit)
   @JoinColumn()
   submiter: UserEntity;
   @OneToOne(() => ticketMessageEntity)

@@ -183,6 +183,7 @@ export class ChatGateway
         JSON.stringify({
           type: 'message',
           message: text,
+          roomId: createMessageDto.roomId,
         }),
       );
     } catch (error) {
@@ -233,6 +234,7 @@ export class ChatGateway
         JSON.stringify({
           type: 'isTyping',
           message: typingMessage,
+          roomId,
         }),
       );
     }
