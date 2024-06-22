@@ -44,7 +44,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        timezone: 'Z',
+        timezone: 'local',
         type: 'mysql',
         host: configService.get('MYSQLDB_HOST'),
         port: configService.get('MYSQLDB_LOCAL_PORT'),
