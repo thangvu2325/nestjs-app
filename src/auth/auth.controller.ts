@@ -16,6 +16,7 @@ import { RefreshJwtGuard } from './guards/refresh.guard';
 import { RedisService } from 'src/redis/redis.service';
 import { HttpExceptionFilter } from 'src/http-exception.filter';
 import { PublicGuard } from './guards/publicRole.guard';
+import { ChangePasswordDto } from './Dto/changePassword.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +30,15 @@ export class AuthController {
   @Post('register')
   async registerUser(@Body() dto: UsersDto) {
     return this.authService.register(dto);
+  }
+  @UseGuards(PublicGuard)
+  @Post('changepassword')
+  async changePassword(
+    @Body('email') email: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    console.log(1);
+    return this.authService.changePassword(email, dto);
   }
 
   @UseGuards(PublicGuard)

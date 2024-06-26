@@ -1,9 +1,6 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
@@ -17,6 +14,7 @@ import { CustomersService } from 'src/customers/customers.service';
 import { CustomersDto } from 'src/customers/customers.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { SecretKeyEntity } from './entity/secretKey.entity';
+import { ChangePasswordDto } from './Dto/changePassword.dto';
 const EXPIRE_TIME = 86400000;
 
 @Injectable()
@@ -73,16 +71,12 @@ export class AuthService {
     });
     // Lưu Refresh Token vào Redis
     await this.redisTokenService.saveRefreshToken(user.id, refreshToken);
-    const roomNewest = user.rooms
-      .filter((room) => room?.status !== 'RESOLVED')
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
     return {
       user: plainToClass(
         UsersDto,
         {
           customer_id: customer?.customer_id ?? '',
           ...user,
-          room_id: roomNewest ? roomNewest.id : null,
           fullName: user.customer.last_name + ' ' + user.customer.first_name,
         },
         { excludeExtraneousValues: true },
@@ -93,6 +87,19 @@ export class AuthService {
         expiresIn: new Date().setTime(new Date().getTime() + EXPIRE_TIME),
       },
     };
+  }
+  async changePassword(email: string, dto: ChangePasswordDto) {
+    const user = await this.validateUser({
+      email,
+      password: dto.password,
+    });
+    const hashedNewPassword = await bcrypt.hashSync(
+      dto.newPassword,
+      bcrypt.genSaltSync(10),
+    );
+    user.password = hashedNewPassword;
+    console.log(user.id);
+    await this.userRepository.update(user.id, user);
   }
   async register(
     dto: UsersDto,
@@ -161,8 +168,7 @@ export class AuthService {
     const user = await this.userService.findOneUserWithEmail(dto.email);
     if (user && (await compare(dto.password, user.password))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
+      return user;
     }
     throw new HttpException(
       'Sai thông tin tài khoản hoặc mật khẩu',

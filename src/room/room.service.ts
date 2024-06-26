@@ -165,12 +165,6 @@ export class RoomService {
     }
     const room = this.roomRepository.create(roomPartial);
     await this.roomRepository.save(room);
-    await this.chatGateWay.firstMessageToRoom(
-      room.id,
-      `Xin chào ${
-        user.customer.last_name + ' ' + user.customer.first_name
-      }, Bạn vui lòng đợi trong chút lát, sẽ có người vào hỗ trợ cho bạn`,
-    );
 
     return room;
   }

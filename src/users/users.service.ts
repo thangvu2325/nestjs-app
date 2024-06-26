@@ -88,7 +88,6 @@ export class UsersService extends MysqlBaseService<UserEntity, UsersDto> {
       .createQueryBuilder('user')
       .where('user.email = :email', { email })
       .leftJoinAndSelect('user.customer', 'customers')
-      .leftJoinAndSelect('user.rooms', 'rooms')
       .getOne();
 
     return user || null;

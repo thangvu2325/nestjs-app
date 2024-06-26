@@ -464,7 +464,7 @@ export class CustomersService extends MysqlBaseService<
     }
     const device = await this.devicesReposity.findOne({
       where: { deviceId: deviceId },
-      relations: ['customers', 'owner'],
+      relations: ['customers', 'owner', 'history'],
     });
 
     if (!device) {
@@ -473,6 +473,7 @@ export class CustomersService extends MysqlBaseService<
         HttpStatus.FORBIDDEN,
       );
     }
+
     device.AlarmReport = device.AlarmReport === 1 ? 0 : 1;
     await this.devicesReposity.save(device);
     return { result: 'Thành công' };
