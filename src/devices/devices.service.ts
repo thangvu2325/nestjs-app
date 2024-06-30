@@ -102,7 +102,7 @@ export class DevicesService extends MysqlBaseService<
     return uniqueId;
   }
 
-  async findAll(query, customer_id: string = 'all') {
+  async findAll(query, customer_id: string = 'all', deviceId?: string) {
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
@@ -125,53 +125,60 @@ export class DevicesService extends MysqlBaseService<
       qb.offset(query.offset);
     }
     const deviceList = await qb.getMany();
-    const devicesDtoArray = deviceList.map((device) => {
-      const historyLast = device?.history?.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-      )[0];
-      let data = {} as HistoryDto;
-      if (historyLast) {
-        data = {
-          sensors: plainToInstance(SensorsDto, historyLast.sensors, {
-            excludeExtraneousValues: true,
-          }),
-          battery: plainToInstance(BatteryDto, historyLast.battery, {
-            excludeExtraneousValues: true,
-          }),
-          sim: plainToInstance(SimDto, historyLast.sim, {
-            excludeExtraneousValues: true,
-          }),
-          signal: plainToInstance(SignalDto, {
-            ...historyLast.signal,
-          }),
-        } as HistoryDto;
-      } else {
-        data = {} as HistoryDto;
-      }
-      return plainToClass(
-        DevicesDto,
-        {
-          ...device,
-          ...data,
-          ownerId: device.owner?.customer_id,
-          roomId: device?.room?.id ?? null,
-          roomHistoryLoggerId: device?.historyLoggerRoom?.id ?? null,
-          active: device.owner?.customer_id ? true : false,
-          customer_id: device.customers
-            .map((cus) => {
-              return cus.customer_id;
-            })
-            .join('|'),
-          role:
-            customer_id !== 'all'
-              ? device?.owner?.customer_id === customer_id
-                ? 'owner'
-                : 'member'
-              : undefined,
-        },
-        { excludeExtraneousValues: true },
-      );
-    });
+    const devicesDtoArray = deviceList
+      .filter((item) => {
+        if (deviceId) {
+          return item.deviceId.includes(deviceId);
+        }
+        return true;
+      })
+      .map((device) => {
+        const historyLast = device?.history?.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+        )[0];
+        let data = {} as HistoryDto;
+        if (historyLast) {
+          data = {
+            sensors: plainToInstance(SensorsDto, historyLast.sensors, {
+              excludeExtraneousValues: true,
+            }),
+            battery: plainToInstance(BatteryDto, historyLast.battery, {
+              excludeExtraneousValues: true,
+            }),
+            sim: plainToInstance(SimDto, historyLast.sim, {
+              excludeExtraneousValues: true,
+            }),
+            signal: plainToInstance(SignalDto, {
+              ...historyLast.signal,
+            }),
+          } as HistoryDto;
+        } else {
+          data = {} as HistoryDto;
+        }
+        return plainToClass(
+          DevicesDto,
+          {
+            ...device,
+            ...data,
+            ownerId: device.owner?.customer_id,
+            roomId: device?.room?.id ?? null,
+            roomHistoryLoggerId: device?.historyLoggerRoom?.id ?? null,
+            active: device.owner?.customer_id ? true : false,
+            customer_id: device.customers
+              .map((cus) => {
+                return cus.customer_id;
+              })
+              .join('|'),
+            role:
+              customer_id !== 'all'
+                ? device?.owner?.customer_id === customer_id
+                  ? 'owner'
+                  : 'member'
+                : undefined,
+          },
+          { excludeExtraneousValues: true },
+        );
+      });
 
     return { devices: devicesDtoArray, devicesCount: devicesDtoArray.length };
   }

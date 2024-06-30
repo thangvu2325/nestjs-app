@@ -144,7 +144,6 @@ export class RoomService {
       count: result.length,
     };
   }
-
   async createRoom(createRoomDto: CreateRoomDto, userId: string) {
     const roomPartial: DeepPartial<Room> = {
       title: createRoomDto.title,

@@ -21,9 +21,22 @@ export class MessageService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  getMessages(getMessagesDto: GetMessagesDto) {
-    return this.messageRepository.findBy({
-      room: { id: getMessagesDto.roomId },
+  async getMessages(getMessagesDto: GetMessagesDto) {
+    const { roomId, skip, take } = getMessagesDto;
+
+    const messages = await this.messageRepository.find({
+      where: { room: { id: roomId } },
+      skip: skip,
+      take: take,
+      relations: ['owner'],
+    });
+    return messages.map((message) => {
+      return {
+        ...message,
+        owner: plainToInstance(UsersDto, message.owner, {
+          excludeExtraneousValues: true,
+        }),
+      };
     });
   }
 

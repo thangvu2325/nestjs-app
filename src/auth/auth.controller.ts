@@ -37,7 +37,6 @@ export class AuthController {
     @Body('email') email: string,
     @Body() dto: ChangePasswordDto,
   ) {
-    console.log(1);
     return this.authService.changePassword(email, dto);
   }
 

@@ -205,6 +205,7 @@ export class ChatGateway
       'message',
       JSON.stringify({
         type: 'handleRoom',
+        roomId,
         message: JSON.stringify({
           ...room,
           owner: room?.owner?.customer?.customer_id || null,

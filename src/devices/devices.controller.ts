@@ -10,8 +10,11 @@ export class DevicesController {
     private readonly historyService: HistoryService,
   ) {}
   @Get()
-  getAllDevice(@Query('customer_id') customer_id: string) {
-    return this.devicessService.findAll({}, customer_id);
+  getAllDevice(
+    @Query('customer_id') customer_id: string,
+    @Query('deviceId') deviceId: string,
+  ) {
+    return this.devicessService.findAll({}, customer_id, deviceId);
   }
   @Get(':deviceId')
   getDeviceById(@Param('deviceId') deviceId: string) {
