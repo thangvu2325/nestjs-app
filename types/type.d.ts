@@ -1,6 +1,6 @@
-export type DataCoapType = [
+export type dataDeviceType = [
   {
-    testId: 'MAIN_MCU_MODULE_SIGNAL';
+    testId: 'STATION';
     details: {
       deviceId: string;
     };
@@ -8,7 +8,7 @@ export type DataCoapType = [
   {
     testId: 'SENSOR';
     details: {
-      AlarmSatus: boolean;
+      AlarmSatus: number;
       whiteSmokeVal: number;
       blackSmokeVal: number;
       Temperature: number;
@@ -16,32 +16,20 @@ export type DataCoapType = [
     };
   },
   {
-    testId: 'BATTERY_VOLTAGE';
+    testId: 'NODELIST';
     details: {
-      voltage: number;
-    };
-  },
-  {
-    testId: 'CELLULAR_SIM';
-    details: {
-      imsi: string;
-    };
-  },
-  {
-    testId: 'CELLULAR_SIGNAL';
-    details: {
-      Operator: string;
-      band: number;
-      EARFCN: number;
-      PCI: number;
-      connectionStatus: number;
-      ipAddress: string;
-      RSRP: number;
-      RSSI: number;
-      RSRQ: number;
-      T3324: number;
-      T3412: number;
-      tac: string;
+      nodeList: Array<nodeType>;
     };
   },
 ];
+export type nodeType = {
+  nodeId: string;
+  sensors: {
+    AlarmSatus: number;
+    blackSmokeVal: number;
+    whiteSmokeVal: number;
+    Temperature: number;
+    Humidity: number;
+  };
+  battery: number;
+};

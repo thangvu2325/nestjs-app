@@ -9,8 +9,8 @@ export class SensorsEntity extends BaseEntity {
   whiteSmokeVal: number;
   @Column({ default: 0 })
   blackSmokeVal: number;
-  @Column({ default: false })
-  AlarmSatus: boolean;
+  @Column({ default: 0 })
+  AlarmSatus: number;
   @Column({ default: 0 })
   Temperature: number;
   @Column({ default: 0 })

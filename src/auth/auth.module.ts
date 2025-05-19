@@ -9,53 +9,19 @@ import { PassportModule } from '@nestjs/passport';
 import { MailService } from 'src/mail/mail.service';
 import { CustomersModule } from 'src/customers/customers.module';
 import { CustomersService } from 'src/customers/customers.service';
-import { CustomersEntity } from 'src/customers/customers.entity';
-import { DevicesEntity } from 'src/devices/entities/devices.entity';
-import { UserEntity } from 'src/users/entity/user.entity';
-import { VerifyEntity } from 'src/users/entity/verifyKey.entity';
 import { CoapService } from 'src/coap/coap.service';
-import { SensorsEntity } from 'src/devices/entities/sensors.entity';
-
-import { BatteryEntity } from 'src/devices/entities/battery.entity';
-import { SignalEntity } from 'src/devices/entities/signal.entity';
-import { SimEntity } from 'src/devices/entities/sim.entity';
-import { HistoryEntity } from 'src/devices/entities/history.entity';
 import { DevicesService } from 'src/devices/devices.service';
-
 import { MessageService } from 'src/message/message.service';
-import { Message } from 'src/message/message.entity';
-import { Notifications } from 'src/notification/entities/notification.entity';
-import { NotificationToken } from 'src/notification/entities/notification-token.entity';
 import { NotificationService } from 'src/notification/notification.service';
-import { WarningLogsEntity } from 'src/devices/entities/warningLogs.entity';
 import { ChatModule } from 'src/chat/chat.module';
-import { Room } from 'src/room/room.entity';
+import { DatabaseModule } from 'src/common/database.module';
 import { SecretKeyEntity } from './entity/secretKey.entity';
-import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
+import { NodeServices } from 'src/devices/nodes.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      CustomersEntity,
-      DevicesEntity,
-      VerifyEntity,
-      UserEntity,
-      SensorsEntity,
-      DevicesEntity,
-      BatteryEntity,
-      SensorsEntity,
-      SignalEntity,
-      SimEntity,
-      HistoryEntity,
-
-      Message,
-      Notifications,
-      NotificationToken,
-      WarningLogsEntity,
-      KeyAddDeviceEntity,
-      Room,
-      SecretKeyEntity,
-    ]), // Add DevicesEntity here
+    TypeOrmModule.forFeature([SecretKeyEntity]),
+    DatabaseModule, // Add DevicesEntity here
     CustomersModule,
     RedisModule,
     PassportModule,
@@ -73,6 +39,7 @@ import { KeyAddDeviceEntity } from 'src/customers/keyAddDevice.entity';
     DevicesService,
     MessageService,
     NotificationService,
+    NodeServices,
   ],
   exports: [AuthService],
 })

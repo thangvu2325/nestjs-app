@@ -5,6 +5,7 @@ import { BatteryDto } from './battery.dto';
 import { SignalDto } from './signal.dto';
 import { SimDto } from './sim.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { NodesDto } from './nodes.dto';
 
 export class DevicesDto extends BaseDto {
   @ApiProperty()
@@ -12,6 +13,7 @@ export class DevicesDto extends BaseDto {
   deviceId: string;
   @Expose()
   deviceName: string;
+  @ApiProperty()
   type: string;
   @ApiProperty()
   @Expose()
@@ -38,4 +40,6 @@ export class DevicesDto extends BaseDto {
   ownerId: string;
   @Expose()
   role: 'owner' | 'member';
+  @Expose()
+  nodes: NodesDto;
 }

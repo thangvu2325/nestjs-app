@@ -9,7 +9,6 @@ import { DevicesDto } from 'src/devices/dto/devices.dto';
 import * as bcrypt from 'bcrypt';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
-import { CoapService } from 'src/coap/coap.service';
 import { HistoryDto } from 'src/devices/dto/history.dto';
 import { SensorsDto } from 'src/devices/dto/sensors.dto';
 import { BatteryDto } from 'src/devices/dto/battery.dto';
@@ -31,7 +30,6 @@ export class CustomersService extends MysqlBaseService<
     private readonly usersReposity: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly devicesReposity: Repository<DevicesEntity>,
-    private readonly coapService: CoapService,
   ) {
     super(customersReposity, CustomersDto);
   }
@@ -132,7 +130,6 @@ export class CustomersService extends MysqlBaseService<
       .leftJoinAndSelect('devices.customers', 'customers')
       .where('devices.deviceId = :deviceId', { deviceId: dto.deviceId })
       .getOne();
-
     // Check if the device exists
     if (!device) {
       throw new HttpException('Không tìm thấy thiết bị', HttpStatus.FORBIDDEN);
@@ -354,7 +351,11 @@ export class CustomersService extends MysqlBaseService<
     });
     return keyAddDevice;
   }
-  async updateDevice(Dto: DevicesDto, customer_id: string, deviceId: string) {
+  async updateDevice(
+    Dto: DevicesDto,
+    customer_id: string,
+    deviceId: string,
+  ): Promise<DevicesDto> {
     // Fetch customer along with their devices
     const customerFound = await this.customersReposity
       .createQueryBuilder('customers')
@@ -364,7 +365,7 @@ export class CustomersService extends MysqlBaseService<
 
     // Check if customer exists
     if (!customerFound) {
-      throw new HttpException(`Customer not found`, HttpStatus.FORBIDDEN);
+      throw new HttpException(`Customer not found`, HttpStatus.NOT_FOUND);
     }
 
     // Check if device exists within customer's devices
@@ -375,24 +376,26 @@ export class CustomersService extends MysqlBaseService<
     if (!deviceFound) {
       throw new HttpException(
         `Customer with ID ${customer_id} does not have a device with ID ${deviceId}`,
-        HttpStatus.FORBIDDEN,
+        HttpStatus.NOT_FOUND,
       );
     }
 
     try {
-      // Update the found device with the new data
-      const deviceUpdated = await this.devicesReposity.save({
-        ...deviceFound,
-        ...Dto,
-      });
+      // Chỉ cập nhật deviceName
+      deviceFound.deviceName = Dto.deviceName || deviceFound.deviceName;
 
-      // Return the updated device instance
+      // Lưu entity
+      const deviceUpdated = await this.devicesReposity.save(deviceFound);
+
+      // Chuyển đổi kết quả thành DevicesDto
       return plainToInstance(DevicesDto, deviceUpdated, {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      // Handle errors during the save operation
-      throw new HttpException(error.message, HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        error.message || 'Failed to update device',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
   async deleteDevice(

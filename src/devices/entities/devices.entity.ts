@@ -14,6 +14,9 @@ import { CustomersEntity } from 'src/customers/customers.entity';
 import { HistoryEntity } from './history.entity';
 import { WarningLogsEntity } from './warningLogs.entity';
 import { Room } from 'src/room/room.entity';
+import { NodesEntity } from './nodes.entity';
+import { SensorsEntity } from './sensors.entity';
+import { deviceAlarmEntity } from './deviceAlarm.entity';
 
 @Entity({
   name: 'devices',
@@ -33,19 +36,25 @@ export class DevicesEntity extends BaseEntity {
   secretKey: string;
   @OneToMany(() => HistoryEntity, (history) => history.device)
   history: HistoryEntity[];
+  @OneToMany(() => deviceAlarmEntity, (deviceAlarm) => deviceAlarm.device)
+  deviceAlarm: deviceAlarmEntity[];
   @OneToMany(() => WarningLogsEntity, (warninglogs) => warninglogs.device)
   warningLogs: WarningLogsEntity[];
   @Column({
     type: 'enum',
     enum: [1, 0],
-    default: 1,
+    default: 0,
   })
   AlarmReport: number;
   @OneToOne(() => Room)
   @JoinColumn()
   room: Room;
-
   @OneToOne(() => Room)
   @JoinColumn()
   historyLoggerRoom: Room;
+  @OneToMany(() => NodesEntity, (node) => node.device)
+  nodes: NodesEntity[];
+  @OneToOne(() => SensorsEntity)
+  @JoinColumn()
+  sensor: SensorsEntity;
 }

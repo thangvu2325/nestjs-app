@@ -4,16 +4,12 @@ import { SensorsEntity } from './sensors.entity';
 import { BatteryEntity } from './battery.entity';
 import { SignalEntity } from './signal.entity';
 import { SimEntity } from './sim.entity';
-import { DevicesEntity } from './devices.entity';
+import { NodesEntity } from './nodes.entity';
 
 @Entity({
-  name: 'history',
+  name: 'nodeHistory',
 })
-export class HistoryEntity extends BaseEntity {
-  @ManyToOne(() => DevicesEntity, (device) => device.history, {
-    nullable: true,
-  })
-  device: DevicesEntity | null; // Thêm | null để TypeScript hiểu device có thể là null
+export class NodeHistoryEntity extends BaseEntity {
   @OneToOne(() => SensorsEntity)
   @JoinColumn()
   sensors: SensorsEntity;
@@ -28,4 +24,6 @@ export class HistoryEntity extends BaseEntity {
   sim: SimEntity;
   @Column({ type: 'text', nullable: true }) // Cho phép null
   logger: string | null;
+  @ManyToOne(() => NodesEntity, (node) => node.history)
+  node: NodesEntity;
 }

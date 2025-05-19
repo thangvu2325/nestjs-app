@@ -20,7 +20,7 @@ import { SensorsEntity } from 'src/devices/entities/sensors.entity';
 import { SignalEntity } from 'src/devices/entities/signal.entity';
 import { SimEntity } from 'src/devices/entities/sim.entity';
 import { Repository } from 'typeorm';
-import { DataCoapType } from 'types/type';
+import { dataDeviceType } from 'types/type';
 import { URL } from 'url';
 import { NotificationService } from 'src/notification/notification.service';
 import { UserEntity } from 'src/users/entity/user.entity';
@@ -117,7 +117,7 @@ export class CoapService {
               const historyLast = device.history.sort(
                 (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
               )[0];
-              historyLast.sensors.AlarmSatus = false;
+              // historyLast.sensors.AlarmSatus = false;
               await this.historyRepository.save(historyLast);
               await this.devicesReposity.save(device);
               await this.chatGateWay.sendDeviceDataToRoom(
@@ -293,35 +293,37 @@ export class CoapService {
                 res.end('Dữ liệu không hợp lệ');
                 return;
               }
-              const data: DataCoapType = JSON.parse(payload) as DataCoapType;
+              const data: dataDeviceType = JSON.parse(
+                payload,
+              ) as dataDeviceType;
               if (!isArray(data)) {
                 break;
               }
               if (data?.length) {
                 data?.forEach((obj) => {
-                  switch (obj.testId) {
-                    case 'MAIN_MCU_MODULE_SIGNAL':
-                      device.deviceId = obj.details.deviceId;
-                      break;
-                    case 'SENSOR':
-                      history.sensors = {
-                        ...obj.details,
-                      } as SensorsDto;
-                      break;
-                    case 'BATTERY_VOLTAGE':
-                      history.battery = {
-                        ...obj.details,
-                      } as BatteryDto;
-                      break;
-                    case 'CELLULAR_SIM':
-                      history.sim = { ...obj.details } as SimDto;
-                      break;
-                    case 'CELLULAR_SIGNAL':
-                      history.signal = {
-                        ...obj.details,
-                      } as SignalDto;
-                      break;
-                  }
+                  // switch (obj.testId) {
+                  // case 'MAIN_MCU_MODULE_SIGNAL':
+                  //   device.deviceId = obj.details.deviceId;
+                  //   break;
+                  // case 'SENSOR':
+                  //   history.sensors = {
+                  //     ...obj.details,
+                  //   } as SensorsDto;
+                  //   break;
+                  // case 'BATTERY_VOLTAGE':
+                  //   history.battery = {
+                  //     ...obj.details,
+                  //   } as BatteryDto;
+                  //   break;
+                  // case 'CELLULAR_SIM':
+                  //   history.sim = { ...obj.details } as SimDto;
+                  //   break;
+                  // case 'CELLULAR_SIGNAL':
+                  //   history.signal = {
+                  //     ...obj.details,
+                  //   } as SignalDto;
+                  //   break;
+                  // }
                 });
               }
 

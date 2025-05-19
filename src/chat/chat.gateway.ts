@@ -17,6 +17,7 @@ import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { CreateMessageDto } from 'src/message/dto/create-message.dto';
 import { MessageService } from 'src/message/message.service';
 import { Room } from 'src/room/room.entity';
+import { NodesEntity } from 'src/devices/entities/nodes.entity';
 
 @WebSocketGateway(55555, { cors: true })
 export class ChatGateway
@@ -28,6 +29,8 @@ export class ChatGateway
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly deviceRepository: Repository<DevicesEntity>,
+    @InjectRepository(NodesEntity)
+    private readonly nodeRepository: Repository<NodesEntity>,
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
     private readonly messageService: MessageService,
@@ -107,7 +110,22 @@ export class ChatGateway
       data,
     };
   }
-
+  async sendNodeDataToRoom(deviceId: string, nodeId: string, message: any) {
+    const node = await this.nodeRepository.findOne({
+      where: {
+        nodeId,
+      },
+      relations: ['room'],
+    });
+    if (!node) {
+      this.logger.error(`Thiết bị không tồn tại`);
+      return;
+    }
+    this.io.to(node.room?.id.toString()).emit('message', message);
+    this.logger.log(
+      `Gửi message đến room ${node.room.id} của node ${node.nodeId} từ thiết bị ${deviceId} thành công`,
+    );
+  }
   async sendDeviceDataToRoom(deviceId: string, message: any) {
     const device = await this.deviceRepository.findOne({
       where: {

@@ -22,7 +22,19 @@ export class MysqlBaseService<Entity extends BaseEntity, Dto> {
       },
     );
   }
+  generateUniqueId(): string {
+    const characters =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 6;
+    let uniqueId = '';
 
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      uniqueId += characters.charAt(randomIndex);
+    }
+
+    return uniqueId;
+  }
   async update(id: string, dataDto: Dto): Promise<{ result: string }> {
     await this.repo.update(id, dataDto as any);
     return { result: 'success' };
@@ -40,6 +52,10 @@ export class MysqlBaseService<Entity extends BaseEntity, Dto> {
   //     excludeExtraneousValues: true,
   //   });
   // }
+  sendWarningUserList = [] as Array<{
+    deviceId: string;
+    status: 'running' | 'pause' | 'idle';
+  }>;
   async findOne(where: FindOneOptions<Entity>): Promise<Entity> {
     const post = await this.repo.findOne(where);
     return post;

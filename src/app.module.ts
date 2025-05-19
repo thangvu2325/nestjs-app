@@ -9,7 +9,6 @@ import { RedisModule } from './redis/redis.module';
 import { MailModule } from './mail/mail.module';
 import { CustomersEntity } from './customers/customers.entity';
 import { NotifiesEntity } from './notifies/notifies.entity';
-import { CoapModule } from './coap/coap.module';
 import { CustomersModule } from './customers/customers.module';
 import { DevicesEntity } from './devices/entities/devices.entity';
 import { SensorsEntity } from './devices/entities/sensors.entity';
@@ -36,6 +35,23 @@ import { ticketsEntity } from './tickets/entity/tickets.entity';
 import { ticketMessageEntity } from './tickets/entity/ticket-message.entity';
 import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NodesEntity } from './devices/entities/nodes.entity';
+import { DatabaseModule } from './common/database.module';
+import { MqttModule, MqttModuleOptions } from './mqtt';
+import { DataSource } from 'typeorm';
+import { NodeHistoryEntity } from './devices/entities/nodeHistory';
+import { deviceAlarmEntity } from './devices/entities/deviceAlarm.entity';
+const mqttOptions: MqttModuleOptions = {
+  hostname: '01a01afc4bff4a6ea36fc855714c3439.s1.eu.hivemq.cloud',
+  port: 8883,
+  protocol: 'mqtts', // Explicitly specify TLS
+  keepalive: 60, // Reduced to a standard value (in seconds)
+  reconnectPeriod: 5000, // Increased to avoid aggressive reconnections (in ms)
+  username: process.env.MQTT_USERNAME || 'admin2', // Use environment variable
+  password: process.env.MQTT_PASSWORD || 'Thang123456', // Use environment variable
+  protocolVersion: 5, // MQTT 5.0, assuming broker support
+  clean: true, // Clean session, adjust if persistent session is needed
+};
 
 @Module({
   imports: [
@@ -58,11 +74,14 @@ import { ScheduleModule } from '@nestjs/schedule';
           NotifiesEntity,
           SensorsEntity,
           BatteryEntity,
+          NodesEntity,
           SimEntity,
           SignalEntity,
+          deviceAlarmEntity,
           HistoryEntity,
           VerifyEntity,
           ticketsEntity,
+          NodeHistoryEntity,
           Room,
           Message,
           NotificationToken,
@@ -74,20 +93,25 @@ import { ScheduleModule } from '@nestjs/schedule';
         ],
         synchronize: true,
       }),
+      dataSourceFactory: async (options) => {
+        const dataSource = new DataSource(options);
+        return await dataSource.initialize();
+      },
     }),
+    DatabaseModule,
     CustomersModule,
     UsersModule,
     AuthModule,
     DevicesModule,
     RedisModule,
     MailModule,
-    CoapModule,
     SMSModule,
     ChatModule,
     NotificationModule,
     RoomModule,
     MessageModule,
     TicketModule,
+    MqttModule.forRoot(mqttOptions),
   ],
   controllers: [AppController],
   providers: [

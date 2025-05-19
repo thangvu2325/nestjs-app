@@ -25,7 +25,7 @@ export class NotificationService {
     private notificationTokenRepo: Repository<NotificationToken>,
   ) {
     this.expo = new Expo({
-      useFcmV1: false,
+      useFcmV1: true,
     });
   }
 
