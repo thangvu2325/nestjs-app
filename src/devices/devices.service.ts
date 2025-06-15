@@ -14,12 +14,9 @@ import { DevicesEntity } from './entities/devices.entity';
 import { DevicesDto } from './dto/devices.dto';
 import { SensorsEntity } from './entities/sensors.entity';
 import { BatteryEntity } from './entities/battery.entity';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcrypt';
 import { SensorsDto } from './dto/sensors.dto';
 import { BatteryDto } from './dto/battery.dto';
-import { SimDto } from './dto/sim.dto';
-import { SignalDto } from './dto/signal.dto';
 import { HistoryDto } from './dto/history.dto';
 import { UserEntity } from 'src/users/entity/user.entity';
 import { Room } from 'src/room/room.entity';
@@ -69,79 +66,20 @@ export class DevicesService extends MysqlBaseService<
   ) {
     super(devicesReposity, DevicesDto);
   }
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  async handleCron() {
-    try {
-      const entities = await this.devicesReposity
-        .createQueryBuilder('devices')
-        .leftJoinAndSelect('devices.history', 'history')
-        .leftJoinAndSelect('history.sensors', 'sensors')
-        .getMany();
-
-      const filteredEntities = entities.filter((device) => {
-        const historyLast = device?.history?.sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-        )[0];
-
-        if (historyLast) {
-          return !device.AlarmReport || historyLast.sensors.AlarmSatus;
-        }
-        return !device.AlarmReport;
-      });
-
-      for (const entity of filteredEntities) {
-        const timeDiff =
-          (new Date().getTime() - new Date(entity.createdAt).getTime()) / 1000;
-        if (timeDiff >= 30) {
-          const historyLast = entity?.history?.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-          )[0];
-
-          if (historyLast && historyLast.sensors.AlarmSatus) {
-            historyLast.sensors.AlarmSatus = 0;
-            await this.sensorsReposity.save(historyLast.sensors);
-          }
-          entity.AlarmReport = 1;
-          await this.devicesReposity.save(entity);
-
-          console.log(`Updated entity with id ${entity.id}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleCron:', error);
-    }
-  }
   private async processDeviceHistory(
     deviceFound: DevicesEntity,
+    payload: string,
     history: HistoryDto,
     device: DevicesDto,
   ): Promise<void> {
     try {
-      const sensorsHistory = await this.sensorsReposity.save(
-        history.sensors as SensorsEntity,
-      );
       const historyDevice = await this.historyRepository.save({
-        sensors: sensorsHistory,
-        logger: JSON.stringify(history),
+        battery: history.battery,
+        logger: payload,
       } as HistoryEntity);
-
       deviceFound.history = deviceFound.history || [];
       deviceFound.history.push(historyDevice);
-      // console.log(deviceFound.nodes[0].history[0]);
-      if (history?.sensors?.AlarmSatus) {
-        const warningLogs = await this.warningLogsRepository.save({
-          message: `Cảnh báo cháy với thiết bị ${deviceFound.deviceName} có mã thiết bị ${deviceFound.deviceId}`,
-        } as WarningLogsEntity);
-        deviceFound.warningLogs = deviceFound.warningLogs || [];
-        deviceFound.warningLogs.push(warningLogs);
-        deviceFound.AlarmReport = 1;
-        await this.devicesReposity.save(deviceFound);
-        await this.sendWarning(device.deviceId);
-      }
-
       await this.devicesReposity.save(deviceFound);
-
-      // Send updates to chat gateway
       const latestHistory = deviceFound.history.sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
       )[0];
@@ -178,7 +116,7 @@ export class DevicesService extends MysqlBaseService<
 
   // MQTT
   @Subscribe({
-    topic: 'device',
+    topic: 'sensor/data',
     transform: (payload) => payload.toString(),
   })
   async garageDevice(@Payload() payload: string): Promise<void> {
@@ -225,10 +163,7 @@ export class DevicesService extends MysqlBaseService<
       .leftJoinAndSelect('nodeHistory.sensors', 'nodeSensors')
       .leftJoinAndSelect('nodeHistory.battery', 'nodeBattery')
       .leftJoinAndSelect('devices.warningLogs', 'warningLogs')
-      .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customers', 'customers')
       .where('devices.deviceId = :deviceId', { deviceId: device.deviceId })
       .getOne();
@@ -244,11 +179,13 @@ export class DevicesService extends MysqlBaseService<
     );
 
     // Process device history
-    await this.processDeviceHistory(deviceFound, history, device);
+    await this.processDeviceHistory(deviceFound, payload, history, device);
   }
-  // testMQTTT(@Payload() payload) {
-  //   this.mqttService.publish('test2', payload);
-  // }
+  ToggleAlarmStatus(deviceId: string, status: 0 | 1) {
+    this.mqttService.publish(`device/${deviceId}/alarm`, {
+      AlarmReport: status,
+    });
+  }
 
   async sendWarning(deviceId) {
     const warningUser = this.sendWarningUserList.find(
@@ -279,27 +216,14 @@ export class DevicesService extends MysqlBaseService<
             .leftJoinAndSelect('nodes.history', 'nodeHistory')
             .leftJoinAndSelect('nodeHistory.sensors', 'nodeSensors')
             .leftJoinAndSelect('nodeHistory.battery', 'nodeBattery')
-            .leftJoinAndSelect('devices.history', 'history')
-            .leftJoinAndSelect('history.sensors', 'sensors')
-            .leftJoinAndSelect('history.battery', 'battery')
             .leftJoinAndSelect('devices.owner', 'owner')
             .leftJoinAndSelect('devices.customers', 'customers')
             .where('devices.deviceId = :deviceId', { deviceId })
             .getOne();
 
-          if (!device || !device.history || device.history.length === 0) {
-            throw new Error(
-              `Device history not found for deviceId: ${deviceId}`,
-            );
-          }
           if (device.AlarmReport === 0) {
             setTimeout(async () => {
               device.AlarmReport = 1;
-              const historyLast = device.history.sort(
-                (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-              )[0];
-              historyLast.sensors.AlarmSatus = 0;
-              await this.historyRepository.save(historyLast);
               await this.devicesReposity.save(device);
               await this.chatGateWay.sendDeviceDataToRoom(
                 device.deviceId,
@@ -307,11 +231,6 @@ export class DevicesService extends MysqlBaseService<
                   type: 'device',
                   message: {
                     deviceId: device?.deviceId,
-                    ...historyLast, // Assuming historyLast is an object containing relevant data
-                    sensors: {
-                      ...historyLast.sensors, // Spread previous sensors properties
-                      AlarmSatus: false, // Add or overwrite alarmStatus property
-                    },
                     AlarmReport: 1,
                   },
                 }),
@@ -324,16 +243,13 @@ export class DevicesService extends MysqlBaseService<
               );
               warningUser.status = 'idle';
               clearTimeout(AlarmTimeout);
-            }, 15000);
+            }, 1000);
             return;
           }
-          const historyLast = device.history.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-          )[0];
           const isNodeAlarm = device.nodes.some(
             (item) => item.AlarmSatus === 1,
           );
-          const isAlarm = isNodeAlarm || historyLast.sensors.AlarmSatus;
+          const isAlarm = isNodeAlarm;
           if (isAlarm) {
             // Thực hiện hành động cảnh báo ở đây
             // Ví dụ: Gửi email, thông báo, hoặc thực hiện các hành động khẩn cấp khác
@@ -408,9 +324,6 @@ export class DevicesService extends MysqlBaseService<
       // Xử lý lỗi ở đây, chẳng hạn như gửi thông báo lỗi
     }
   }
-  testMQTT() {
-    this.mqttService.publish('test', { message: 'test 1' });
-  }
 
   // End MQTT
   async findAllNodes(
@@ -481,16 +394,11 @@ export class DevicesService extends MysqlBaseService<
   async findAll(query, customer_id: string = 'all', deviceId?: string) {
     const qb = await this.devicesReposity
       .createQueryBuilder('devices')
-      .leftJoinAndSelect('devices.history', 'history')
       .leftJoinAndSelect('devices.nodes', 'nodes')
       .leftJoinAndSelect('devices.owner', 'owner')
       .leftJoinAndSelect('owner.myDevice', 'myDevice')
       .leftJoinAndSelect('devices.room', 'room')
       .leftJoinAndSelect('devices.historyLoggerRoom', 'historyLoggerRoom')
-      .leftJoinAndSelect('history.sensors', 'sensors')
-      .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customers', 'customers');
     qb.where('1 = 1');
     qb.orderBy('devices.createdAt', 'DESC'); // Corrected the alias to 'posts'
@@ -510,33 +418,10 @@ export class DevicesService extends MysqlBaseService<
         return true;
       })
       .map((device) => {
-        const historyLast = device?.history?.sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-        )[0];
-        let data = {} as HistoryDto;
-        if (historyLast) {
-          data = {
-            sensors: plainToInstance(SensorsDto, historyLast.sensors, {
-              excludeExtraneousValues: true,
-            }),
-            battery: plainToInstance(BatteryDto, historyLast.battery, {
-              excludeExtraneousValues: true,
-            }),
-            sim: plainToInstance(SimDto, historyLast.sim, {
-              excludeExtraneousValues: true,
-            }),
-            signal: plainToInstance(SignalDto, {
-              ...historyLast.signal,
-            }),
-          } as HistoryDto;
-        } else {
-          data = {} as HistoryDto;
-        }
         return plainToClass(
           DevicesDto,
           {
             ...device,
-            ...data,
             nodes: device.nodes.map((node) => {
               return plainToInstance(NodesDto, node, {
                 excludeExtraneousValues: true,
@@ -642,10 +527,7 @@ export class DevicesService extends MysqlBaseService<
       .leftJoinAndSelect('owner.myDevice', 'myDevice')
       .leftJoinAndSelect('devices.room', 'room')
       .leftJoinAndSelect('devices.historyLoggerRoom', 'historyLoggerRoom')
-      .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customers', 'customers');
     qb.where('1 = 1');
 
@@ -658,33 +540,10 @@ export class DevicesService extends MysqlBaseService<
       });
       device.historyLoggerRoom = roomHistoryLogger;
       device = await this.devicesReposity.save(device);
-      const historyLast = device?.history?.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-      )[0];
-      let data = {} as HistoryDto;
-      if (historyLast) {
-        data = {
-          sensors: plainToInstance(SensorsDto, historyLast.sensors, {
-            excludeExtraneousValues: true,
-          }),
-          battery: plainToInstance(BatteryDto, historyLast.battery, {
-            excludeExtraneousValues: true,
-          }),
-          sim: plainToInstance(SimDto, historyLast.sim, {
-            excludeExtraneousValues: true,
-          }),
-          signal: plainToInstance(SignalDto, {
-            ...historyLast.signal,
-          }),
-        } as HistoryDto;
-      } else {
-        data = {} as HistoryDto;
-      }
       return plainToClass(
         DevicesDto,
         {
           ...device,
-          ...data,
           ownerId: device.owner?.customer_id,
           roomId: device?.room?.id ?? null,
           roomHistoryLoggerId: device?.historyLoggerRoom?.id ?? null,

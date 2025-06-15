@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
-import { CoapService } from './coap/coap.service';
 import { HttpExceptionFilter } from './http-exception.filter';
 
 async function bootstrap() {
@@ -39,8 +38,5 @@ async function bootstrap() {
   await app.listen(port).then((_value) => {
     console.log(`Server started at Port ${port}`);
   });
-  const coapService = app.get(CoapService);
-  coapService.startServer();
-  coapService.sendRequest();
 }
 bootstrap();

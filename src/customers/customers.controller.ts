@@ -6,7 +6,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -45,6 +44,11 @@ export class CustomersController {
   createKeyAddDevice(@Body('deviceId') deviceId: string, @Request() req) {
     return this.customersService.createKeyAddDevice(req.user.userId, deviceId);
   }
+  @Put('/')
+  UpdateProfileCustomer(@Body() Dto: CustomersDto) {
+    return this.customersService.updateProfile(Dto);
+  }
+
   @Post('/device/:customer_id')
   addDevice(
     @Body() Dto: DevicesDto,
@@ -76,20 +80,7 @@ export class CustomersController {
     return this.customersService.updateDevice(dto, customer_id, deviceId);
   }
 
-  @UseGuards(PublicGuard)
-  @Get('/ticket')
-  getAllTicketsCustomer(
-    @Query() query: { startDate: string; endDate: string; status: string },
-    @Request() req,
-  ) {
-    console.log(req.user);
-    return this.ticketsService.Get({
-      ...query,
-      userId: req.user.userId ?? undefined,
-    });
-  }
-
-  //@UseGuards(JwtGuard)
+  // @UseGuards(JwtGuard)
   @Post('/device/:customer_id/:deviceId')
   toggleAlarmStatus(
     @Param('customer_id') customer_id: string,

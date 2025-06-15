@@ -17,14 +17,11 @@ import { DevicesEntity } from 'src/devices/entities/devices.entity';
 export class CustomersEntity extends BaseEntity {
   @Column({ default: '' })
   first_name: string;
-
   @Column({ default: '' })
   last_name: string;
-
   @Column({ default: null, unique: true })
   @IsEmail()
   email: string;
-
   @Column({ default: null, unique: true })
   @IsPhoneNumber()
   phone: string;

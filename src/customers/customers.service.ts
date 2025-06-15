@@ -9,12 +9,8 @@ import { DevicesDto } from 'src/devices/dto/devices.dto';
 import * as bcrypt from 'bcrypt';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { UserEntity } from 'src/users/entity/user.entity';
-import { HistoryDto } from 'src/devices/dto/history.dto';
-import { SensorsDto } from 'src/devices/dto/sensors.dto';
-import { BatteryDto } from 'src/devices/dto/battery.dto';
-import { SimDto } from 'src/devices/dto/sim.dto';
-import { SignalDto } from 'src/devices/dto/signal.dto';
 import { KeyAddDeviceEntity } from './keyAddDevice.entity';
+import { DevicesService } from 'src/devices/devices.service';
 
 @Injectable()
 export class CustomersService extends MysqlBaseService<
@@ -30,6 +26,7 @@ export class CustomersService extends MysqlBaseService<
     private readonly usersReposity: Repository<UserEntity>,
     @InjectRepository(DevicesEntity)
     private readonly devicesReposity: Repository<DevicesEntity>,
+    private readonly deviceService: DevicesService,
   ) {
     super(customersReposity, CustomersDto);
   }
@@ -70,6 +67,20 @@ export class CustomersService extends MysqlBaseService<
       customers: customersDtoArray,
       customersCount: customersDtoArray.length,
     };
+  }
+  async updateProfile(Dto: CustomersDto): Promise<{ affected: number }> {
+    try {
+      // Tạo object chứa các giá trị cần cập nhật, loại bỏ customer_id
+      const { customer_id, ...updateData } = Dto;
+      // Thực hiện cập nhật
+      const result = await this.customersReposity.update(
+        { customer_id }, // Điều kiện WHERE
+        updateData, // Dữ liệu cần cập nhật
+      );
+      return { affected: result.affected || 0 }; // Trả về số bản ghi bị ảnh hưởng
+    } catch (error) {
+      throw new Error(`Failed to update profile: ${error.message}`);
+    }
   }
   async saveCustomer(
     userId: string,
@@ -123,10 +134,7 @@ export class CustomersService extends MysqlBaseService<
       .leftJoinAndSelect('devices.history', 'history')
       .leftJoinAndSelect('devices.owner', 'owner')
       .leftJoinAndSelect('devices.room', 'room')
-      .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customers', 'customers')
       .where('devices.deviceId = :deviceId', { deviceId: dto.deviceId })
       .getOne();
@@ -200,31 +208,12 @@ export class CustomersService extends MysqlBaseService<
     await this.devicesReposity.save(device);
 
     // Prepare the latest history data
-    const historyLast = device?.history?.sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-    )[0];
-    let data: HistoryDto = {} as HistoryDto;
-    if (historyLast) {
-      data = {
-        sensors: plainToInstance(SensorsDto, historyLast.sensors, {
-          excludeExtraneousValues: true,
-        }),
-        battery: plainToInstance(BatteryDto, historyLast.battery, {
-          excludeExtraneousValues: true,
-        }),
-        sim: plainToInstance(SimDto, historyLast.sim, {
-          excludeExtraneousValues: true,
-        }),
-        signal: plainToInstance(SignalDto, { ...historyLast.signal }),
-      } as HistoryDto;
-    }
 
     // Return the device details
     return plainToClass(
       DevicesDto,
       {
         ...device,
-        ...data,
         roomId: device?.room?.id ?? null,
         active: device.customers.length ? true : false,
         role: dto.type,
@@ -240,10 +229,7 @@ export class CustomersService extends MysqlBaseService<
       .leftJoinAndSelect('devices.owner', 'owner')
       .leftJoinAndSelect('owner.myDevice', 'myDevice')
       .leftJoinAndSelect('devices.room', 'room')
-      .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .leftJoinAndSelect('devices.customers', 'customers');
     const customerFound = await this.customersReposity.findOne({
       where: {
@@ -269,33 +255,10 @@ export class CustomersService extends MysqlBaseService<
         }
       })
       .map((device) => {
-        const historyLast = device?.history?.sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-        )[0];
-        let data = {} as HistoryDto;
-        if (historyLast) {
-          data = {
-            sensors: plainToInstance(SensorsDto, historyLast.sensors, {
-              excludeExtraneousValues: true,
-            }),
-            battery: plainToInstance(BatteryDto, historyLast.battery, {
-              excludeExtraneousValues: true,
-            }),
-            sim: plainToInstance(SimDto, historyLast.sim, {
-              excludeExtraneousValues: true,
-            }),
-            signal: plainToInstance(SignalDto, {
-              ...historyLast.signal,
-            }),
-          } as HistoryDto;
-        } else {
-          data = {} as HistoryDto;
-        }
         return plainToInstance(
           DevicesDto,
           {
             ...device,
-            ...data,
             roomId: device?.room?.id ?? null,
             customer_id: device.customers
               .map((cus) => {
@@ -476,8 +439,11 @@ export class CustomersService extends MysqlBaseService<
         HttpStatus.FORBIDDEN,
       );
     }
-
     device.AlarmReport = device.AlarmReport === 1 ? 0 : 1;
+    this.deviceService.ToggleAlarmStatus(
+      device.deviceId,
+      device.AlarmReport as 0 | 1,
+    );
     await this.devicesReposity.save(device);
     return { result: 'Thành công' };
   }

@@ -7,7 +7,7 @@ import { BatteryEntity } from 'src/devices/entities/battery.entity';
 import { deviceAlarmEntity } from 'src/devices/entities/deviceAlarm.entity';
 import { DevicesEntity } from 'src/devices/entities/devices.entity';
 import { HistoryEntity } from 'src/devices/entities/history.entity';
-import { NodeHistoryEntity } from 'src/devices/entities/nodeHistory';
+import { NodeHistoryEntity } from 'src/devices/entities/nodeHistory.entity';
 import { NodesEntity } from 'src/devices/entities/nodes.entity';
 import { SensorsEntity } from 'src/devices/entities/sensors.entity';
 import { SignalEntity } from 'src/devices/entities/signal.entity';

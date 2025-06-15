@@ -9,7 +9,6 @@ import { PassportModule } from '@nestjs/passport';
 import { MailService } from 'src/mail/mail.service';
 import { CustomersModule } from 'src/customers/customers.module';
 import { CustomersService } from 'src/customers/customers.service';
-import { CoapService } from 'src/coap/coap.service';
 import { DevicesService } from 'src/devices/devices.service';
 import { MessageService } from 'src/message/message.service';
 import { NotificationService } from 'src/notification/notification.service';
@@ -35,7 +34,6 @@ import { NodeServices } from 'src/devices/nodes.service';
     MailService,
     CustomersService,
     Logger,
-    CoapService,
     DevicesService,
     MessageService,
     NotificationService,

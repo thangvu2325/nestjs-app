@@ -27,7 +27,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { MailService } from 'src/mail/mail.service';
 import { NodesEntity } from './entities/nodes.entity';
 import { NodesDto } from './dto/nodes.dto';
-import { NodeHistoryEntity } from './entities/nodeHistory';
+import { NodeHistoryEntity } from './entities/nodeHistory.entity';
 import { HistoryDto } from './dto/history.dto';
 import { SensorsDto } from './dto/sensors.dto';
 import { BatteryDto } from './dto/battery.dto';
@@ -118,7 +118,7 @@ export class NodeServices extends MysqlBaseService<NodesEntity, NodesDto> {
       const historyNode = await this.nodeHistoryRepository.save({
         sensors: sensorsHistory,
         battery: batteryHistory,
-      } as HistoryEntity);
+      } as NodeHistoryEntity);
       nodeEntity.history = nodeEntity.history || [];
       nodeEntity.history.push(historyNode);
       nodeEntity.AlarmSatus = historyNode.sensors.AlarmSatus;

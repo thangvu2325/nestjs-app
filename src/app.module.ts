@@ -37,22 +37,11 @@ import { KeyAddDeviceEntity } from './customers/keyAddDevice.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NodesEntity } from './devices/entities/nodes.entity';
 import { DatabaseModule } from './common/database.module';
-import { MqttModule, MqttModuleOptions } from './mqtt';
+import { MqttModule } from './mqtt';
 import { DataSource } from 'typeorm';
-import { NodeHistoryEntity } from './devices/entities/nodeHistory';
+import { NodeHistoryEntity } from './devices/entities/nodeHistory.entity';
 import { deviceAlarmEntity } from './devices/entities/deviceAlarm.entity';
-const mqttOptions: MqttModuleOptions = {
-  hostname: '01a01afc4bff4a6ea36fc855714c3439.s1.eu.hivemq.cloud',
-  port: 8883,
-  protocol: 'mqtts', // Explicitly specify TLS
-  keepalive: 60, // Reduced to a standard value (in seconds)
-  reconnectPeriod: 5000, // Increased to avoid aggressive reconnections (in ms)
-  username: process.env.MQTT_USERNAME || 'admin2', // Use environment variable
-  password: process.env.MQTT_PASSWORD || 'Thang123456', // Use environment variable
-  protocolVersion: 5, // MQTT 5.0, assuming broker support
-  clean: true, // Clean session, adjust if persistent session is needed
-};
-
+import { mqttOptions } from './mqtt/mqttOptions';
 @Module({
   imports: [
     ScheduleModule.forRoot(),

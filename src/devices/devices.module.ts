@@ -4,7 +4,6 @@ import { DevicesController } from './devices.controller';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { HistoryController } from './history.controller';
 import { HistoryService } from './history.service';
-import { CoapService } from 'src/coap/coap.service';
 import { CustomersService } from 'src/customers/customers.service';
 import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
@@ -23,7 +22,6 @@ import { NodeServices } from './nodes.service';
     DevicesService,
     JwtService,
     HistoryService,
-    CoapService,
     CustomersService,
     MailService,
     UsersService,

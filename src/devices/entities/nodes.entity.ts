@@ -9,7 +9,7 @@ import {
 import { BaseEntity } from 'src/common/mysql/base.entity';
 import { Room } from 'src/room/room.entity';
 import { DevicesEntity } from './devices.entity';
-import { NodeHistoryEntity } from './nodeHistory';
+import { NodeHistoryEntity } from './nodeHistory.entity';
 
 @Entity({
   name: 'nodes',

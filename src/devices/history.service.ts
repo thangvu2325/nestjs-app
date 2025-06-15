@@ -4,20 +4,17 @@ import { Repository } from 'typeorm';
 import { MysqlBaseService } from 'src/common/mysql/base.service';
 import { plainToInstance } from 'class-transformer';
 import { DevicesEntity } from './entities/devices.entity';
-import { CustomersEntity } from 'src/customers/customers.entity';
-import { SensorsEntity } from './entities/sensors.entity';
-import { SignalEntity } from './entities/signal.entity';
-import { BatteryEntity } from './entities/battery.entity';
-import { SimEntity } from './entities/sim.entity';
-import { SensorsDto } from './dto/sensors.dto';
+
 import { BatteryDto } from './dto/battery.dto';
-import { SimDto } from './dto/sim.dto';
-import { SignalDto } from './dto/signal.dto';
+
 import { HistoryEntity } from './entities/history.entity';
 import { HistoryDto } from './dto/history.dto';
-import { DevicesDto } from './dto/devices.dto';
 import { HistoryLoggerDto } from './dto/historyLogger.dto';
 import { addHours, subDays } from 'date-fns';
+import { NodeHistoryEntity } from './entities/nodeHistory.entity';
+import { NodeHistoryDto } from './dto/nodeHistory.dto';
+import { SensorsDto } from './dto/sensors.dto';
+import { NodesDto } from './dto/nodes.dto';
 @Injectable()
 export class HistoryService extends MysqlBaseService<
   HistoryEntity,
@@ -28,16 +25,8 @@ export class HistoryService extends MysqlBaseService<
     private readonly historyRepository: Repository<HistoryEntity>,
     @InjectRepository(DevicesEntity)
     private readonly deviceRepository: Repository<DevicesEntity>,
-    @InjectRepository(CustomersEntity)
-    private readonly customersReposity: Repository<CustomersEntity>,
-    @InjectRepository(SensorsEntity)
-    private readonly sensorsReposity: Repository<SensorsEntity>,
-    @InjectRepository(SignalEntity)
-    private readonly signalReposity: Repository<SignalEntity>,
-    @InjectRepository(BatteryEntity)
-    private readonly batteryReposity: Repository<BatteryEntity>,
-    @InjectRepository(SimEntity)
-    private readonly simReposity: Repository<SimEntity>,
+    @InjectRepository(NodeHistoryEntity)
+    private readonly nodeHistoryRepository: Repository<NodeHistoryEntity>,
   ) {
     super(historyRepository, HistoryDto);
   }
@@ -64,10 +53,7 @@ export class HistoryService extends MysqlBaseService<
       .createQueryBuilder('history')
       .leftJoinAndSelect('history.device', 'devices')
       .leftJoinAndSelect('devices.customers', 'customers')
-      .leftJoinAndSelect('history.sensors', 'sensors')
       .leftJoinAndSelect('history.battery', 'battery')
-      .leftJoinAndSelect('history.signal', 'signal')
-      .leftJoinAndSelect('history.sim', 'sim')
       .where('history.createdAt BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
@@ -96,17 +82,8 @@ export class HistoryService extends MysqlBaseService<
             HistoryDto,
             {
               ...history,
-              sensors: plainToInstance(SensorsDto, history.sensors, {
-                excludeExtraneousValues: true,
-              }),
               battery: plainToInstance(BatteryDto, history.battery, {
                 excludeExtraneousValues: true,
-              }),
-              sim: plainToInstance(SimDto, history.sim, {
-                excludeExtraneousValues: true,
-              }),
-              signal: plainToInstance(SignalDto, {
-                ...history.signal,
               }),
             },
             {
@@ -114,9 +91,9 @@ export class HistoryService extends MysqlBaseService<
             },
           ),
 
-          device: plainToInstance(DevicesDto, history.device, {
-            excludeExtraneousValues: true,
-          }),
+          // device: plainToInstance(DevicesDto, history.device, {
+          //   excludeExtraneousValues: true,
+          // }),
         };
       });
 
@@ -124,6 +101,70 @@ export class HistoryService extends MysqlBaseService<
     return {
       historyList: historyDtoArray,
       historyCount: historyDtoArray.length,
+    };
+  }
+  async GetNodeHistory(query: {
+    nodeId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    nodeHistoryList: Array<NodeHistoryDto>;
+    nodeHistoryCount: number;
+  }> {
+    const startDate = query.startDate
+      ? new Date(query.startDate)
+      : new Date(new Date().setDate(new Date().getDate() - 10));
+    const endDate = query.endDate ? new Date(query.endDate) : new Date();
+    if (
+      (startDate && isNaN(startDate.getTime())) ||
+      (endDate && isNaN(endDate.getTime()))
+    ) {
+      throw new Error('Invalid date format');
+    }
+    const qb = await this.nodeHistoryRepository
+      .createQueryBuilder('nodeHistory')
+      .leftJoinAndSelect('nodeHistory.node', 'nodes')
+      .leftJoinAndSelect('nodeHistory.sensors', 'sensors')
+      .where('nodeHistory.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    // Execute the query and count
+    const nodeHistoryList = await qb.getMany();
+    // Map to DTOs
+    const historyDtoArray = nodeHistoryList
+      .filter((history) => {
+        if (history.node === null) return false;
+        return query.nodeId ? history.node.nodeId === query.nodeId : true;
+      })
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((history) => {
+        return {
+          ...plainToInstance(
+            NodeHistoryDto,
+            {
+              ...history,
+              sensors: plainToInstance(SensorsDto, history.sensors, {
+                excludeExtraneousValues: true,
+              }),
+              battery: plainToInstance(SensorsDto, history.battery, {
+                excludeExtraneousValues: true,
+              }),
+              node: plainToInstance(NodesDto, history.node, {
+                excludeExtraneousValues: true,
+              }),
+            },
+            {
+              excludeExtraneousValues: true,
+            },
+          ),
+        };
+      });
+
+    // Return results
+    return {
+      nodeHistoryList: historyDtoArray,
+      nodeHistoryCount: historyDtoArray.length,
     };
   }
   async GetRequest(query: {

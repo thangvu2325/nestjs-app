@@ -13,12 +13,6 @@ export class DevicesController {
     private readonly historyService: HistoryService,
   ) {}
 
-  @Get('/testmqtt')
-  testMqtt() {
-    this.devicessService.testMQTT();
-    return 'test';
-  }
-
   @Get('/nodes')
   async getAllNodes(@Query('deviceId') deviceId?: string) {
     if (deviceId) {
@@ -53,7 +47,6 @@ export class DevicesController {
   ): Promise<{ result: string }> {
     return this.devicessService.updateDevice(roomId, deviceId);
   }
-
   @Get('/secret/updateHistoryRoom')
   updateHistoryRoom() {
     return this.devicessService.updateHistoryRoom();

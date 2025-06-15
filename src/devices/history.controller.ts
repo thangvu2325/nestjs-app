@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { HistoryService } from './history.service';
 import { HistoryDto } from './dto/history.dto';
+import { NodeHistoryDto } from './dto/nodeHistory.dto';
 // import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('history')
@@ -26,6 +27,27 @@ export class HistoryController {
   }> {
     return this.historyService.Get(query);
   }
+
+  @Get('node')
+  // @ApiTags('Admin')
+  // @ApiOperation({ summary: 'Get admin section' })
+  // @Get('admin')
+  // @ApiBearerAuth('JWT-auth') // This is the one that needs to match the name in main.ts
+  getAllNode(
+    @Query()
+    query: {
+      nodeId?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<{
+    nodeHistoryList: Array<NodeHistoryDto>;
+    nodeHistoryCount: number;
+  }> {
+    console.log(query);
+    return this.historyService.GetNodeHistory(query);
+  }
+
   @Get('logger/:deviceId')
   getAllHistoryLoggerDevice(
     @Param('deviceId') deviceId: string,

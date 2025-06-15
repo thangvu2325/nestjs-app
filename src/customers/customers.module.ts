@@ -4,7 +4,6 @@ import { UsersService } from 'src/users/users.service';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { DevicesService } from 'src/devices/devices.service';
-import { CoapService } from 'src/coap/coap.service';
 import { JwtModule } from '@nestjs/jwt';
 import { MessageService } from 'src/message/message.service';
 import { NotificationService } from 'src/notification/notification.service';
@@ -33,7 +32,6 @@ import { DevicesModule } from 'src/devices/devices.module';
     UsersService,
     DevicesService,
     Logger,
-    CoapService,
     MessageService,
     NotificationService,
     NodeServices,

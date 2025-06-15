@@ -2,14 +2,12 @@ import { Expose } from 'class-transformer';
 import { BaseDto } from 'src/common/base.dto';
 import { SensorsDto } from './sensors.dto';
 import { BatteryDto } from './battery.dto';
-import { DevicesDto } from './devices.dto';
-export class HistoryDto extends BaseDto {
+import { NodesDto } from './nodes.dto';
+export class NodeHistoryDto extends BaseDto {
   @Expose()
-  device: DevicesDto;
+  node: NodesDto;
   @Expose()
   sensors: SensorsDto;
   @Expose()
   battery: BatteryDto;
-  @Expose()
-  logger: string;
 }
