@@ -124,7 +124,7 @@ export class DevicesService extends MysqlBaseService<
       this.logger.error('Dữ liệu không hợp lệ');
       return;
     }
-
+    console.log(payload)
     const data: dataDeviceType = JSON.parse(payload);
     if (!Array.isArray(data) || !data.length) {
       return;
