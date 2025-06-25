@@ -124,7 +124,6 @@ export class DevicesService extends MysqlBaseService<
       this.logger.error('Dữ liệu không hợp lệ');
       return;
     }
-    console.log(payload)
     const data: dataDeviceType = JSON.parse(payload);
     if (!Array.isArray(data) || !data.length) {
       return;
@@ -133,7 +132,7 @@ export class DevicesService extends MysqlBaseService<
     const device: DevicesDto = {} as DevicesDto;
     const history: HistoryDto = {} as HistoryDto;
     let nodeList: nodeType[] = [];
-
+    console.log(1)
     // Process payload data
     data.forEach((obj) => {
       switch (obj.testId) {
@@ -148,7 +147,7 @@ export class DevicesService extends MysqlBaseService<
           break;
       }
     });
-
+    console.log(2)
     if (!device.deviceId) {
       this.logger.error('Không tìm thấy deviceId');
       return;
@@ -159,9 +158,6 @@ export class DevicesService extends MysqlBaseService<
       .createQueryBuilder('devices')
       .leftJoinAndSelect('devices.history', 'history')
       .leftJoinAndSelect('devices.nodes', 'nodes')
-      .leftJoinAndSelect('nodes.history', 'nodeHistory')
-      .leftJoinAndSelect('nodeHistory.sensors', 'nodeSensors')
-      .leftJoinAndSelect('nodeHistory.battery', 'nodeBattery')
       .leftJoinAndSelect('devices.warningLogs', 'warningLogs')
       .leftJoinAndSelect('history.battery', 'battery')
       .leftJoinAndSelect('devices.customers', 'customers')
@@ -172,15 +168,17 @@ export class DevicesService extends MysqlBaseService<
       this.logger.log(`Device not found with id: ${device.deviceId}`);
       return;
     }
-
+    console.log(3)
     // Process nodes concurrently
     await Promise.all(
       nodeList.map((node) => this.nodeService.processNode(node, deviceFound)),
     );
-
+      console.log(4)
     // Process device history
     await this.processDeviceHistory(deviceFound, payload, history, device);
+    console.log(5)
   }
+
   ToggleAlarmStatus(deviceId: string, status: 0 | 1) {
     this.mqttService.publish(`device/${deviceId}/alarm`, {
       AlarmReport: status,
@@ -303,7 +301,7 @@ export class DevicesService extends MysqlBaseService<
             warningUser.status = 'running';
             AlarmTimeout = setTimeout(
               checkAlarmStatus,
-              Number(process.env.WARNING_CYCLE),
+              Number(process.env.WARNING_CYCLE) || 5000,
             );
           } else {
             const warningUser = this.sendWarningUserList.find(

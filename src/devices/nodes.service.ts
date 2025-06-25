@@ -84,7 +84,6 @@ export class NodeServices extends MysqlBaseService<NodesEntity, NodesDto> {
       );
 
       const nodeEntity =
-        nodeFound ||
         (await this.nodesReposity
           .createQueryBuilder('nodes')
           .leftJoinAndSelect('nodes.device', 'device')
